@@ -10,7 +10,7 @@ import Foundation
 import Alamofire
 
 @objc public protocol OfflineRequestManagerDelegate {
-    @objc optional func offlineRequest(withDictionary: [String: Any]) -> OfflineRequest?
+    @objc optional func offlineRequest(withDictionary dictionary: [String: Any]) -> OfflineRequest?
     
     @objc optional func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateTo progress: Double)
     @objc optional func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateConnectionStatus connected: Bool)
@@ -34,16 +34,22 @@ import Alamofire
     public var delegate: OfflineRequestManagerDelegate? {
         didSet {
             if let delegate = delegate, pendingRequests.count == 0, pendingRequestDictionaries.count > 0 {
+                var requests = [OfflineRequest]()
+                
                 for dict in pendingRequestDictionaries {
                     if let request = delegate.offlineRequest?(withDictionary: dict) {
-                        addRequest(request)
+                        requests.append(request)
                     }
+                }
+                
+                if requests.count > 0 {
+                    addRequests(requests)
                 }
             }
         }
     }
     
-    public var connected: Bool = true {
+    public private(set) var connected: Bool = true {
         didSet {
             delegate?.offlineRequestManager?(self, didUpdateConnectionStatus: connected)
             
@@ -56,26 +62,28 @@ import Alamofire
     private var pendingRequests = [OfflineRequest]()
     private var pendingRequestDictionaries = [[String: Any]]()
     
-    private var currentRequest: OfflineRequest?
+    public private(set) var currentRequest: OfflineRequest?
     
     private static var sharedInstance: OfflineRequestManager?
     
     private var backgroundTask: UIBackgroundTaskIdentifier?
     
     /// Current total progress; Value goes from 0 to 1
-    public var progress: Double = 1 {
+    public private(set) var progress: Double = 1 {
         didSet {
             delegate?.offlineRequestManager?(self, didUpdateTo: progress)
         }
     }
     
-    public var currentRequestIndex = 0
-    public var requestCount = 0
+    public private(set) var currentRequestIndex = 0
+    public private(set) var requestCount = 0
     
-    private let reachabilityManager = NetworkReachabilityManager()
+    public var reachabilityManager = NetworkReachabilityManager()
     private var submissionTimer: Timer?
     
     public var requestTimeLimit: TimeInterval = 90
+    
+    static var fileName = "offline_request_manager"
     
     /// shared singleton; creates a new object or pulls up the object written to disk if possible
     static public var manager: OfflineRequestManager {
@@ -83,13 +91,16 @@ import Alamofire
             
             let manager = archivedManager() ?? OfflineRequestManager()
             
-            manager.setup()
-            
             sharedInstance = manager
             return manager
         }
         
         return manager
+    }
+    
+    override init() {
+        super.init()
+        setup()
     }
     
     required convenience public init?(coder aDecoder: NSCoder) {
@@ -113,7 +124,7 @@ import Alamofire
         aCoder.encode(pendingRequestDictionaries, forKey: "pendingRequestDictionaries")
     }
     
-    /// instantiates the ImageManager written to disk if possible
+    /// instantiates the OfflineRequestManager already written to disk if possible
     static public func archivedManager() -> OfflineRequestManager? {
         guard let filePath = filePath(), let archivedManager = NSKeyedUnarchiver.unarchiveObject(withFile: filePath) as? OfflineRequestManager else {
             return nil
@@ -124,7 +135,7 @@ import Alamofire
     
     private static func filePath() -> String? {
         do {
-            return try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false).appendingPathComponent("offline_request_manager").path
+            return try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false).appendingPathComponent(fileName).path
         }
         catch {
             return nil
@@ -148,6 +159,13 @@ import Alamofire
         }
     }
     
+    private func endBackgroundTask() {
+        if let task = backgroundTask {
+            UIApplication.shared.endBackgroundTask(task)
+            backgroundTask = nil
+        }
+    }
+    
     /// attempts to send an image to the server
     @objc open func attemptSubmission() {
         guard let request = pendingRequests.first, currentRequest == nil && shouldAttemptRequest() else { return }
@@ -164,6 +182,8 @@ import Alamofire
         request.perform { [unowned self] error in
             
             NSObject.cancelPreviousPerformRequests(withTarget: self)
+            
+            guard request == self.currentRequest else { return }
             
             self.currentRequest = nil
             
@@ -208,44 +228,56 @@ import Alamofire
     
     private func popRequest(_ request: OfflineRequest) {
         
-        self.updateProgress(currentRequestProgress: 1)
-        
         if let index = pendingRequests.index(of: request) {
-            pendingRequests.remove(at: index)
-        }
-        
-        if pendingRequests.count == 0 {
-            if let task = backgroundTask {
-                UIApplication.shared.endBackgroundTask(task)
-                backgroundTask = nil
-            }
             
-            currentRequestIndex = 0
-            progress = 1
-        }
-        else {
-            currentRequestIndex += 1
+            self.updateProgress(currentRequestProgress: 1)
+            
+            pendingRequests.remove(at: index)
+            
+            if pendingRequests.count == 0 {
+                
+                endBackgroundTask()
+                currentRequestIndex = 0
+                progress = 1
+            }
+            else {
+                currentRequestIndex += 1
+            }
         }
         
         attemptSubmission()
+    }
+    
+    public func clearAllRequests() {
+        pendingRequests.removeAll()
+        currentRequestIndex = 0
+        progress = 1
+        currentRequest = nil
     }
     
     public func queueRequest(_ request: OfflineRequest) {
-        addRequest(request)
+        queueRequests([request])
+    }
+    
+    public func queueRequests(_ requests: [OfflineRequest]) {
+        addRequests(requests)
         
-        if request.dictionaryRepresentation() != nil {
-            saveToDisk()
+        for request in requests {
+            if request.dictionaryRepresentation() != nil {
+                saveToDisk()
+                break
+            }
         }
         
         attemptSubmission()
     }
     
-    private func addRequest(_ request: OfflineRequest) {
-        pendingRequests.append(request)
+    private func addRequests(_ requests: [OfflineRequest]) {
+        pendingRequests.append(contentsOf: requests)
         requestCount = pendingRequests.count + currentRequestIndex
     }
     
-    private func saveToDisk() {
+    public func saveToDisk() {
         
         if let path = OfflineRequestManager.filePath() {
             

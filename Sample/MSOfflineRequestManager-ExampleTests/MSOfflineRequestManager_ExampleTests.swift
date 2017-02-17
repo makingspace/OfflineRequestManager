@@ -6,30 +6,272 @@
 //  Copyright © 2017 MakeSpace. All rights reserved.
 //
 
-import XCTest
+@testable import MSOfflineRequestManager
+import Alamofire
+import Quick
+import Nimble
 
-class MSOfflineRequestManager_ExampleTests: XCTestCase {
+class MockRequest: OfflineRequest {
     
-    override func setUp() {
-        super.setUp()
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+    var error: NSError? = nil
+    var dictionary: [String: Any] = [:]
+    var complete = false
+    
+    static let progressIncrement = 0.2
+    
+    var currentProgress = 0.0
+    
+    
+    override func dictionaryRepresentation() -> [String : Any]? {
+        return dictionary
     }
     
-    override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-        super.tearDown()
-    }
-    
-    func testExample() {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-    }
-    
-    func testPerformanceExample() {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
+    override func perform(completion: @escaping (Error?) -> Void) {
+        Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
+            self.currentProgress += MockRequest.progressIncrement
+            
+            self.delegate?.request(self, didUpdateTo: self.currentProgress)
+            
+            if self.currentProgress >= 1 {
+                timer.invalidate()
+                
+                self.complete = true
+                completion(self.error)
+            }
         }
     }
+}
+
+class OfflineRequestManagerListener: NSObject, OfflineRequestManagerDelegate {
+    enum TriggerType {
+        case progress(request: OfflineRequest, fractionComplete: Double)
+        case connectionStatus(connected: Bool)
+        case started(request: OfflineRequest)
+        case finished(request: OfflineRequest)
+        case failed(request: OfflineRequest, error: NSError)
+    }
     
+    var triggerBlock: ((TriggerType) -> Void)?
+    
+    func offlineRequest(withDictionary dictionary: [String : Any]) -> OfflineRequest? {
+        let request = MockRequest()
+        request.dictionary = dictionary
+        return request
+    }
+    
+    func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateTo progress: Double) {
+        guard let request = manager.currentRequest else { return }
+        triggerBlock?(.progress(request: request, fractionComplete: progress))
+    }
+    
+    func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateConnectionStatus connected: Bool) {
+        triggerBlock?(.connectionStatus(connected: connected))
+    }
+    
+    func offlineRequestManager(_ manager: OfflineRequestManager, didStartRequest request: OfflineRequest) {
+        triggerBlock?(.started(request: request))
+    }
+    
+    func offlineRequestManager(_ manager: OfflineRequestManager, requestDidFail request: OfflineRequest, withError error: NSError) {
+        triggerBlock?(.failed(request: request, error: error))
+    }
+    
+    func offlineRequestManager(_ manager: OfflineRequestManager, didFinishRequest request: OfflineRequest) {
+        triggerBlock?(.finished(request: request))
+    }
+}
+
+class MSOfflineRequestManagerTests: QuickSpec {
+    
+    override func spec() {
+        
+        let manager = OfflineRequestManager()
+        let listener = OfflineRequestManagerListener()
+        
+        beforeSuite {
+            OfflineRequestManager.fileName = "test_manager"
+            manager.reachabilityManager?.stopListening()
+            manager.reachabilityManager = nil
+            manager.saveToDisk()
+            
+            manager.delegate = listener
+        }
+        
+        beforeEach {
+            manager.clearAllRequests()
+        }
+        
+        describe("archivedManager") {
+            it("should read the archived manager from disk") {
+                manager.queueRequest(MockRequest())
+                manager.queueRequest(MockRequest())
+                
+                var archivedManager = OfflineRequestManager.archivedManager()
+                
+                archivedManager?.delegate = OfflineRequestManagerListener()
+                expect(archivedManager).toNot(beNil())
+                expect(archivedManager?.requestCount).to(equal(2))
+                archivedManager?.attemptSubmission()
+                
+                guard let request = archivedManager?.currentRequest as? MockRequest else {
+                    XCTFail("Failed to find test request")
+                    return
+                }
+                
+                expect(request.dictionary["test"]).to(beNil())
+                request.dictionary["test"] = "value"
+                request.delegate?.requestNeedsSave(request)
+                
+                archivedManager = OfflineRequestManager.archivedManager()
+                
+                archivedManager?.delegate = OfflineRequestManagerListener()
+                expect(archivedManager).toNot(beNil())
+                expect(archivedManager?.requestCount).to(equal(2))
+                archivedManager?.attemptSubmission()
+                
+                guard let adjustedRequest = archivedManager?.currentRequest as? MockRequest else {
+                    XCTFail("Failed to find test request")
+                    return
+                }
+                
+                expect(adjustedRequest.dictionary["test"] as? String).to(equal("value"))
+            }
+        }
+        
+        describe("request lifecycle") {
+            
+            beforeEach {
+                manager.clearAllRequests()
+            }
+            
+            it("should indicate when a request has started") {
+                waitUntil { done in
+                    let request = MockRequest()
+                    
+                    listener.triggerBlock = { type in
+                        switch type {
+                        case .started(let returnedRequest):
+                            expect(returnedRequest).to(equal(request))
+                            expect((returnedRequest as? MockRequest)?.complete).to(beFalse())
+                            done()
+                        default:
+                            break
+                        }
+                    }
+                    
+                    manager.queueRequest(request)
+                }
+            }
+            
+            it("should indicate when a request has finished") {
+                waitUntil { done in
+                    let request = MockRequest()
+                    
+                    listener.triggerBlock = { type in
+                        switch type {
+                        case .finished(let returnedRequest):
+                            expect(returnedRequest).to(equal(request))
+                            expect((returnedRequest as? MockRequest)?.complete).to(beTrue())
+                            done()
+                        default:
+                            break
+                        }
+                    }
+                    
+                    manager.queueRequest(request)
+                }
+            }
+            
+            
+            it("should indicate when a request has failed") {
+                waitUntil { done in
+                    let request = MockRequest()
+                    let error = NSError(domain: "test", code: -1, userInfo: nil)
+                    request.error = error
+                    
+                    listener.triggerBlock = { type in
+                        switch type {
+                        case .failed(let returnedRequest, let returnedError):
+                            expect(returnedRequest).to(equal(request))
+                            expect((returnedRequest as? MockRequest)?.complete).to(beTrue())
+                            expect(returnedError).to(equal(error))
+                            done()
+                        default:
+                            break
+                        }
+                    }
+                    
+                    manager.queueRequest(request)
+                }
+            }
+        }
+        
+        describe("progress updates") {
+            
+            beforeEach {
+                manager.clearAllRequests()
+            }
+            
+            context("single request") {
+                it("should pass along progress updates matching that request's progress") {
+                    waitUntil { done in
+                        var i = 0.0
+                        let increment = MockRequest.progressIncrement
+                        
+                        listener.triggerBlock = { type in
+                            switch type {
+                            case .progress(_, let complete):
+                                expect(complete).to(equal(i * increment))
+                                if complete >= 1 {
+                                    listener.triggerBlock = nil
+                                    done()
+                                }
+                                else {
+                                    i += 1
+                                }
+                            default:
+                                break
+                            }
+                        }
+                        
+                        manager.queueRequest(MockRequest())
+                    }
+                }
+            }
+            
+            context("multiple requests") {
+                
+                it("should pass along progress updates scaled to the number of total requests") {
+                    waitUntil { done in
+                        var i = 0.0
+                        let requests = [MockRequest(), MockRequest(), MockRequest()]
+                        
+                        listener.triggerBlock = { type in
+                            switch type {
+                            case .progress(let returnedRequest, let complete):
+                                guard let request = returnedRequest as? MockRequest, let index = requests.index(of: request) else {
+                                    XCTFail("Failed to find test request")
+                                    break
+                                }
+                                
+                                let diff = abs(complete - (Double(index) + request.currentProgress) / Double(requests.count))
+                                expect(diff).to(beLessThan(0.01))
+                                if complete >= 1 {
+                                    listener.triggerBlock = nil
+                                    done()
+                                }
+                                else {
+                                    i += 1
+                                }
+                            default:
+                                break
+                            }
+                        }
+                        
+                        manager.queueRequests(requests)
+                    }
+                }
+            }
+        }
+    }
 }

@@ -50,7 +50,7 @@
     self.totalProgressLabel.text = [NSString stringWithFormat:@"%i%%", (int)(manager.progress * 100)];
 }
 
-- (OfflineRequest *)offlineRequestWithDictionary:(NSDictionary<NSString *,id> *)withDictionary
+- (OfflineRequest *)offlineRequestWithDictionary:(NSDictionary<NSString *,id> *)dictionary
 {
     return [MSTestRequest new];
 }

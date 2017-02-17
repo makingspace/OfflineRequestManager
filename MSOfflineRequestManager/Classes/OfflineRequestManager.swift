@@ -9,29 +9,90 @@
 import Foundation
 import Alamofire
 
-/// Protocol for receiving callbacaks from OfflineRequestManager and reconfiguring a new OfflineRequestManager from dictionaries saved to disk in the case of previous requests that never completed
+/// Protocol for receiving callbacaks from OfflineRequestManager and reconfiguring a new OfflineRequestManager from dictionaries saved to disk in the case of 
+/// previous requests that never completed
 @objc public protocol OfflineRequestManagerDelegate {
+    
+    /// Method that the delegate uses to generate OfflineRequest objects from dictionaries written to disk
+    ///
+    /// - Parameter dictionary: dictionary saved to disk associated with an unfinished request
+    /// - Returns: OfflineRequest object to be queued
     @objc optional func offlineRequest(withDictionary dictionary: [String: Any]) -> OfflineRequest?
     
+    /// Callback indicating the OfflineRequestManager's current progress
+    ///
+    /// - Parameters:
+    ///   - manager: OfflineRequestManager instance
+    ///   - progress: current progress for all ongoing requests (ranges from 0 to 1)
     @objc optional func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateTo progress: Double)
+    
+    /// Callback indicating the OfflineRequestManager's current connection status
+    ///
+    /// - Parameters:
+    ///   - manager: OfflineRequestManager instance
+    ///   - connected: value indicating whether there is currently connectivity
     @objc optional func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateConnectionStatus connected: Bool)
     
-    @objc optional func offlineRequestManagerShouldAttemptRequest(_ manager: OfflineRequestManager) -> Bool
+    /// Callback that can be used to block a request attempt
+    ///
+    ///   - manager: OfflineRequestManager instance
+    ///   - request: OfflineRequest to be performed
+    /// - Returns: value indicating whether the OfflineRequestManager should move forward with the request attempt
+    @objc optional func offlineRequestManager(_ manager: OfflineRequestManager, shouldAttemptRequest request: OfflineRequest) -> Bool
+    
+    /// Callback providing the opportunity to reconfigure and reattempt an OfflineRequest after a failure not related to connectivity issues
+    ///
+    /// - Parameters:
+    ///   - manager: OfflineRequestManager instance
+    ///   - request: OfflineRequest that failed
+    ///   - error: NSError associated with the failure
+    /// - Returns: value indicating whether the OfflineRequestManager should reattempt the OfflineRequest action
     @objc optional func offlineRequestManager(_ manager: OfflineRequestManager, shouldReattemptRequest request: OfflineRequest, withError error: NSError) -> Bool
     
+    /// Callback indicating that the OfflineRequest action has started
+    ///
+    /// - Parameters:
+    ///   - manager: OfflineRequestManager instance
+    ///   - request: OfflineRequest that started its action
     @objc optional func offlineRequestManager(_ manager: OfflineRequestManager, didStartRequest request: OfflineRequest)
+    
+    /// Callback indicating that the OfflineRequest action has successfully finished
+    ///
+    /// - Parameters:
+    ///   - manager: OfflineRequestManager instance
+    ///   - request: OfflineRequest that finished its action
     @objc optional func offlineRequestManager(_ manager: OfflineRequestManager, didFinishRequest request: OfflineRequest)
+    
+    /// Callback indicating that the OfflineRequest action has failed for reasons unrelated to connectivity
+    ///
+    /// - Parameters:
+    ///   - manager: OfflineRequestManager instance
+    ///   - request: OfflineRequest that failed
+    ///   - error: NSError associated with the failure
     @objc optional func offlineRequestManager(_ manager: OfflineRequestManager, requestDidFail request: OfflineRequest, withError error: NSError)
 }
 
+/// Protocol that OfflineRequestManager conforms to to listen for callbacks from the currently processing OfflineRequest object
 @objc public protocol OfflineRequestDelegate {
+    
+    /// Callback indicating the OfflineRequest's current progress
+    ///
+    /// - Parameters:
+    ///   - request: OfflineRequest instance
+    ///   - progress: current progress (ranges from 0 to 1)
     @objc func request(_ request: OfflineRequest, didUpdateTo progress: Double)
+    
+    /// Callback indicating that the OfflineRequestManager should save the current state of its pending requests to disk
+    ///
+    /// - Parameter request: OfflineRequest that has updated and needs to be rewritten to disk
     @objc func requestNeedsSave(_ request: OfflineRequest)
 }
     
 // Class for handling outstanding network requests; all data is written to disk in the case of app termination
 @objc public class OfflineRequestManager: NSObject, NSCoding, OfflineRequestDelegate {
     
+    /// Object listening to all callbacks from the OfflineRequestManager. Optional for strictly in-memory use, but must be set in order to make use of dictionaries 
+    /// written to disk when recovering from app termination
     public var delegate: OfflineRequestManagerDelegate? {
         didSet {
             if let delegate = delegate, pendingRequests.count == 0, pendingRequestDictionaries.count > 0 {
@@ -50,6 +111,7 @@ import Alamofire
         }
     }
     
+    /// Property indicating whether there is currently an internet connection
     public private(set) var connected: Bool = true {
         didSet {
             delegate?.offlineRequestManager?(self, didUpdateConnectionStatus: connected)
@@ -60,14 +122,10 @@ import Alamofire
         }
     }
     
-    private var pendingRequests = [OfflineRequest]()
-    private var pendingRequestDictionaries = [[String: Any]]()
-    
-    public private(set) var currentRequest: OfflineRequest?
-    
-    private static var sharedInstance: OfflineRequestManager?
-    
-    private var backgroundTask: UIBackgroundTaskIdentifier?
+    /// Total number of ongoing requests
+    public private(set) var requestCount = 0
+    /// Index of current request within the currently ongoing requests
+    public private(set) var currentRequestIndex = 0
     
     /// Current total progress; Value goes from 0 to 1
     public private(set) var progress: Double = 1 {
@@ -76,17 +134,19 @@ import Alamofire
         }
     }
     
-    public private(set) var currentRequestIndex = 0
-    public private(set) var requestCount = 0
+    /// OfflineRequest currently performing an action
+    public private(set) var currentRequest: OfflineRequest?
     
+    /// NetworkReachabilityManager used to observe connectivity status. Can be set to nil to allow requests to be attempted when offline
     public var reachabilityManager = NetworkReachabilityManager()
-    private var submissionTimer: Timer?
     
+    /// Time limit in seconds before OfflineRequestManager will kill an ongoing OfflineRequest
     public var requestTimeLimit: TimeInterval = 90
     
-    static var fileName = "offline_request_manager"
+    /// Name of file in Documents directory to which OfflineRequestManager object is archived
+    public static var fileName = "offline_request_manager"
     
-    /// shared singleton; creates a new object or pulls up the object written to disk if possible
+    /// Shared singleton OfflineRequestManager; creates a new object or pulls up the object written to disk if possible
     static public var manager: OfflineRequestManager {
         guard let manager = sharedInstance else {
             
@@ -98,6 +158,14 @@ import Alamofire
         
         return manager
     }
+    
+    private var pendingRequests = [OfflineRequest]()
+    private var pendingRequestDictionaries = [[String: Any]]()
+    
+    private static var sharedInstance: OfflineRequestManager?
+    
+    private var backgroundTask: UIBackgroundTaskIdentifier?
+    private var submissionTimer: Timer?
     
     override init() {
         super.init()
@@ -167,9 +235,9 @@ import Alamofire
         }
     }
     
-    /// attempts to send an image to the server
+    /// attempts to perform the next OfflineRequest action in the queue
     @objc open func attemptSubmission() {
-        guard let request = pendingRequests.first, currentRequest == nil && shouldAttemptRequest() else { return }
+        guard let request = pendingRequests.first, currentRequest == nil && shouldAttemptRequest(request) else { return }
         
         registerBackgroundTask()
         currentRequest = request
@@ -220,9 +288,9 @@ import Alamofire
         self.delegate?.offlineRequestManager?(self, requestDidFail: request, withError: NSError.genericError())
     }
     
-    private func shouldAttemptRequest() -> Bool {
+    private func shouldAttemptRequest(_ request: OfflineRequest) -> Bool {
         let connectionDetected = (reachabilityManager?.networkReachabilityStatus != .notReachable) ?? connected
-        let delegateAllowed = (delegate?.offlineRequestManagerShouldAttemptRequest?(self) ?? true)
+        let delegateAllowed = (delegate?.offlineRequestManager?(self, shouldAttemptRequest: request) ?? true)
         
         return connectionDetected && delegateAllowed
     }
@@ -249,17 +317,27 @@ import Alamofire
         attemptSubmission()
     }
     
+    /// Clears out the current OfflineRequest queue and returns to a neutral state
     public func clearAllRequests() {
         pendingRequests.removeAll()
         currentRequestIndex = 0
         progress = 1
+        
+        currentRequest?.delegate = nil
         currentRequest = nil
+        saveToDisk()
     }
     
+    /// Enqueues a single OfflineRequest
+    ///
+    /// - Parameter request: OfflineRequest to be queued
     public func queueRequest(_ request: OfflineRequest) {
         queueRequests([request])
     }
     
+    /// Enqueues an array of OfflineRequest objects
+    ///
+    /// - Parameter requests: Array of OfflineRequest objects to be queued
     public func queueRequests(_ requests: [OfflineRequest]) {
         addRequests(requests)
         
@@ -278,8 +356,8 @@ import Alamofire
         requestCount = pendingRequests.count + currentRequestIndex
     }
     
+    /// <#Description#>
     public func saveToDisk() {
-        
         if let path = OfflineRequestManager.filePath() {
             
             pendingRequestDictionaries.removeAll()
@@ -294,9 +372,6 @@ import Alamofire
         }
     }
     
-    /// Updates total progress as a function of the progress in the currently ongoing upload
-    ///
-    /// - Parameter currentRequestProgress: Value between 0 and 1 representing the progress of the current upload
     private func updateProgress(currentRequestProgress: Double) {
         let uploadUnit = 1 / max(1.0, Double(requestCount))
         let newProgressValue = (Double(self.currentRequestIndex) + currentRequestProgress) * uploadUnit

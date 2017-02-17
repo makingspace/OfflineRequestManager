@@ -55,7 +55,7 @@
     return [MSTestRequest new];
 }
 
-- (BOOL)offlineRequestManagerShouldAttemptRequest:(OfflineRequestManager *)manager
+- (BOOL)offlineRequestManager:(OfflineRequestManager *)manager shouldAttemptRequest:(OfflineRequest *)request
 {
     return self.requestsAllowed;
 }

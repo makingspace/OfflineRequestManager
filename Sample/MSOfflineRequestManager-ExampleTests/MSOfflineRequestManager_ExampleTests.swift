@@ -21,6 +21,7 @@ class MockRequest: OfflineRequest {
     
     var currentProgress = 0.0
     
+    var shouldFixError = false
     
     override func dictionaryRepresentation() -> [String : Any]? {
         return dictionary
@@ -40,6 +41,13 @@ class MockRequest: OfflineRequest {
             }
         }
     }
+    
+    override func shouldAttemptResubmission(forError error: Error) -> Bool {
+        if shouldFixError {
+            self.error = nil
+        }
+        return shouldFixError
+    }
 }
 
 class OfflineRequestManagerListener: NSObject, OfflineRequestManagerDelegate {
@@ -52,6 +60,7 @@ class OfflineRequestManagerListener: NSObject, OfflineRequestManagerDelegate {
     }
     
     var triggerBlock: ((TriggerType) -> Void)?
+    var reattemptBlock: ((OfflineRequest, NSError) -> Bool)?
     
     func offlineRequest(withDictionary dictionary: [String : Any]) -> OfflineRequest? {
         let request = MockRequest()
@@ -78,6 +87,14 @@ class OfflineRequestManagerListener: NSObject, OfflineRequestManagerDelegate {
     
     func offlineRequestManager(_ manager: OfflineRequestManager, didFinishRequest request: OfflineRequest) {
         triggerBlock?(.finished(request: request))
+    }
+    
+    func offlineRequestManager(_ manager: OfflineRequestManager, shouldReattemptRequest request: OfflineRequest, withError error: NSError) -> Bool {
+        if let block = reattemptBlock {
+            return block(request, error)
+        }
+        
+        return false
     }
 }
 
@@ -269,6 +286,89 @@ class MSOfflineRequestManagerTests: QuickSpec {
                         }
                         
                         manager.queueRequests(requests)
+                    }
+                }
+            }
+        }
+        
+        describe("reattempting submissions") {
+            
+            context("default") {
+                it("should not reattempt and pass the error back") {
+                    waitUntil { done in
+                        let request = MockRequest()
+                        let error = NSError(domain: "test", code: -1, userInfo: nil)
+                        request.error = error
+                        
+                        listener.triggerBlock = { type in
+                            switch type {
+                            case .failed(let returnedRequest, let returnedError):
+                                expect(returnedRequest).to(equal(request))
+                                expect(returnedError).to(equal(error))
+                                done()
+                            default:
+                                break
+                            }
+                        }
+                        
+                        manager.queueRequest(request)
+                    }
+                }
+            }
+            
+            context("reconfigured by request") {
+                it("should reconfigure itself and succeed on the next attempt") {
+                    waitUntil { done in
+                        let request = MockRequest()
+                        let error = NSError(domain: "test", code: -1, userInfo: nil)
+                        request.error = error
+                        request.shouldFixError = true
+                        
+                        listener.triggerBlock = { type in
+                            switch type {
+                            case .finished(let returnedRequest):
+                                expect(returnedRequest).to(equal(request))
+                                expect((returnedRequest as? MockRequest)?.complete).to(beTrue())
+                                done()
+                            default:
+                                break
+                            }
+                        }
+                        
+                        manager.queueRequest(request)
+                    }
+                }
+            }
+            
+            context("reconfigured by delegate") {
+                it("should reconfigure the request and succeed on the next attempt") {
+                    waitUntil { done in
+                        let request = MockRequest()
+                        let error = NSError(domain: "test", code: -1, userInfo: nil)
+                        request.error = error
+                        
+                        listener.reattemptBlock = { returnedRequest, _ in
+                            listener.reattemptBlock = nil
+                            
+                            if let request = returnedRequest as? MockRequest {
+                                request.error = nil
+                            }
+                            
+                            return true
+                        }
+                        
+                        listener.triggerBlock = { type in
+                            switch type {
+                            case .finished(let returnedRequest):
+                                expect(returnedRequest).to(equal(request))
+                                expect((returnedRequest as? MockRequest)?.complete).to(beTrue())
+                                done()
+                            default:
+                                break
+                            }
+                        }
+                        
+                        manager.queueRequest(request)
                     }
                 }
             }

@@ -9,6 +9,7 @@
 import Foundation
 import Alamofire
 
+/// Protocol for receiving callbacaks from OfflineRequestManager and reconfiguring a new OfflineRequestManager from dictionaries saved to disk in the case of previous requests that never completed
 @objc public protocol OfflineRequestManagerDelegate {
     @objc optional func offlineRequest(withDictionary dictionary: [String: Any]) -> OfflineRequest?
     

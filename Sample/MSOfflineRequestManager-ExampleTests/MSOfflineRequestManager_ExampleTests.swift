@@ -52,7 +52,7 @@ class MockRequest: OfflineRequest {
 
 class OfflineRequestManagerListener: NSObject, OfflineRequestManagerDelegate {
     enum TriggerType {
-        case progress(request: OfflineRequest, fractionComplete: Double)
+        case progress(request: OfflineRequest, totalCompletion: Double, currentRequestCompletion: Double)
         case connectionStatus(connected: Bool)
         case started(request: OfflineRequest)
         case finished(request: OfflineRequest)
@@ -68,9 +68,9 @@ class OfflineRequestManagerListener: NSObject, OfflineRequestManagerDelegate {
         return request
     }
     
-    func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateTo progress: Double) {
+    func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateToTotalProgress totalProgress: Double, withCurrentRequestProgress currentRequestProgress: Double) {
         guard let request = manager.currentRequest else { return }
-        triggerBlock?(.progress(request: request, fractionComplete: progress))
+        triggerBlock?(.progress(request: request, totalCompletion: totalProgress, currentRequestCompletion: currentRequestProgress))
     }
     
     func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateConnectionStatus connected: Bool) {
@@ -237,9 +237,10 @@ class MSOfflineRequestManagerTests: QuickSpec {
                         
                         listener.triggerBlock = { type in
                             switch type {
-                            case .progress(_, let complete):
-                                expect(complete).to(equal(i * increment))
-                                if complete >= 1 {
+                            case .progress(_, let totalComplete, let currentComplete):
+                                expect(totalComplete).to(equal(i * increment))
+                                expect(currentComplete).to(equal(totalComplete))
+                                if totalComplete >= 1 {
                                     listener.triggerBlock = nil
                                     done()
                                 }
@@ -265,15 +266,17 @@ class MSOfflineRequestManagerTests: QuickSpec {
                         
                         listener.triggerBlock = { type in
                             switch type {
-                            case .progress(let returnedRequest, let complete):
+                            case .progress(let returnedRequest, let totalComplete, let currentRequestComplete):
                                 guard let request = returnedRequest as? MockRequest, let index = requests.index(of: request) else {
                                     XCTFail("Failed to find test request")
                                     break
                                 }
                                 
-                                let diff = abs(complete - (Double(index) + request.currentProgress) / Double(requests.count))
+                                expect(currentRequestComplete).to(equal(request.currentProgress))
+                                
+                                let diff = abs(totalComplete - (Double(index) + request.currentProgress) / Double(requests.count))
                                 expect(diff).to(beLessThan(0.01))
-                                if complete >= 1 {
+                                if totalComplete >= 1 {
                                     listener.triggerBlock = nil
                                     done()
                                 }

@@ -23,8 +23,9 @@ import Alamofire
     ///
     /// - Parameters:
     ///   - manager: OfflineRequestManager instance
-    ///   - progress: current progress for all ongoing requests (ranges from 0 to 1)
-    @objc optional func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateTo progress: Double)
+    ///   - currentRequestProgress: progress of currently ongoing request (ranges from 0 to 1)
+    ///   - totalProgress: current progress for all ongoing requests (ranges from 0 to 1)
+    @objc optional func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateToTotalProgress totalProgress: Double, withCurrentRequestProgress currentRequestProgress: Double)
     
     /// Callback indicating the OfflineRequestManager's current connection status
     ///
@@ -128,9 +129,9 @@ import Alamofire
     public private(set) var currentRequestIndex = 0
     
     /// Current total progress; Value goes from 0 to 1
-    public private(set) var progress: Double = 1 {
+    public private(set) var progress: (totalProgress: Double, currentRequestProgress: Double) = (1, 1) {
         didSet {
-            delegate?.offlineRequestManager?(self, didUpdateTo: progress)
+            delegate?.offlineRequestManager?(self, didUpdateToTotalProgress: progress.totalProgress, withCurrentRequestProgress: progress.currentRequestProgress)
         }
     }
     
@@ -307,7 +308,7 @@ import Alamofire
                 
                 endBackgroundTask()
                 currentRequestIndex = 0
-                progress = 1
+                progress = (1, 1)
             }
             else {
                 currentRequestIndex += 1
@@ -321,7 +322,7 @@ import Alamofire
     public func clearAllRequests() {
         pendingRequests.removeAll()
         currentRequestIndex = 0
-        progress = 1
+        progress = (1, 1)
         
         currentRequest?.delegate = nil
         currentRequest = nil
@@ -375,7 +376,8 @@ import Alamofire
     private func updateProgress(currentRequestProgress: Double) {
         let uploadUnit = 1 / max(1.0, Double(requestCount))
         let newProgressValue = (Double(self.currentRequestIndex) + currentRequestProgress) * uploadUnit
-        progress = min(1, max(0, newProgressValue))
+        let totalProgress = min(1, max(0, newProgressValue))
+        progress = (totalProgress, currentRequestProgress)
     }
     
     public func request(_ request: OfflineRequest, didUpdateTo progress: Double) {

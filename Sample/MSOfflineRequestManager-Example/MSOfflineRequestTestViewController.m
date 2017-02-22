@@ -47,6 +47,7 @@
     OfflineRequestManager *manager = [OfflineRequestManager manager];
     self.completedRequestsLabel.text = [NSString stringWithFormat:@"%li", (long)manager.currentRequestIndex];
     self.pendingRequestsLabel.text = [NSString stringWithFormat:@"%li", (long)(manager.requestCount - manager.currentRequestIndex)];
+    self.totalProgressLabel.text = [NSString stringWithFormat:@"%i%%", (int)(manager.totalProgress * 100)];
 }
 
 - (OfflineRequest *)offlineRequestWithDictionary:(NSDictionary<NSString *,id> *)dictionary

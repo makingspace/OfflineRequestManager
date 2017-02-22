@@ -168,6 +168,9 @@ class MSOfflineRequestManagerTests: QuickSpec {
                     listener.triggerBlock = { type in
                         switch type {
                         case .started(let returnedRequest):
+                            expect(manager.totalProgress).to(equal(0))
+                            expect(manager.currentRequestProgress).to(equal(0))
+                            
                             expect(returnedRequest).to(equal(request))
                             expect((returnedRequest as? MockRequest)?.complete).to(beFalse())
                             done()
@@ -187,6 +190,9 @@ class MSOfflineRequestManagerTests: QuickSpec {
                     listener.triggerBlock = { type in
                         switch type {
                         case .finished(let returnedRequest):
+                            expect(manager.totalProgress).to(equal(1))
+                            expect(manager.currentRequestProgress).to(equal(1))
+                            
                             expect(returnedRequest).to(equal(request))
                             expect((returnedRequest as? MockRequest)?.complete).to(beTrue())
                             done()
@@ -209,6 +215,9 @@ class MSOfflineRequestManagerTests: QuickSpec {
                     listener.triggerBlock = { type in
                         switch type {
                         case .failed(let returnedRequest, let returnedError):
+                            expect(manager.totalProgress).to(equal(1))
+                            expect(manager.currentRequestProgress).to(equal(1))
+                            
                             expect(returnedRequest).to(equal(request))
                             expect((returnedRequest as? MockRequest)?.complete).to(beTrue())
                             expect(returnedError).to(equal(error))
@@ -232,6 +241,9 @@ class MSOfflineRequestManagerTests: QuickSpec {
             context("single request") {
                 it("should pass along progress updates matching that request's progress") {
                     waitUntil { done in
+                        expect(manager.totalProgress).to(equal(1))
+                        expect(manager.currentRequestProgress).to(equal(1))
+                        
                         var i = 0.0
                         let increment = MockRequest.progressIncrement
                         
@@ -261,6 +273,9 @@ class MSOfflineRequestManagerTests: QuickSpec {
                 
                 it("should pass along progress updates scaled to the number of total requests") {
                     waitUntil { done in
+                        expect(manager.totalProgress).to(equal(1))
+                        expect(manager.currentRequestProgress).to(equal(1))
+                        
                         var i = 0.0
                         let requests = [MockRequest(), MockRequest(), MockRequest()]
                         

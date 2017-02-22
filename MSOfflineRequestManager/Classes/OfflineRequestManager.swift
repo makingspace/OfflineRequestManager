@@ -90,7 +90,7 @@ import Alamofire
 }
     
 // Class for handling outstanding network requests; all data is written to disk in the case of app termination
-@objc public class OfflineRequestManager: NSObject, NSCoding, OfflineRequestDelegate {
+@objc public class OfflineRequestManager: NSObject, NSCoding {
     
     /// Object listening to all callbacks from the OfflineRequestManager. Optional for strictly in-memory use, but must be set in order to make use of dictionaries 
     /// written to disk when recovering from app termination
@@ -128,13 +128,6 @@ import Alamofire
     /// Index of current request within the currently ongoing requests
     public private(set) var currentRequestIndex = 0
     
-    /// Current total progress; Value goes from 0 to 1
-    public private(set) var progress: (totalProgress: Double, currentRequestProgress: Double) = (1, 1) {
-        didSet {
-            delegate?.offlineRequestManager?(self, didUpdateToTotalProgress: progress.totalProgress, withCurrentRequestProgress: progress.currentRequestProgress)
-        }
-    }
-    
     /// OfflineRequest currently performing an action
     public private(set) var currentRequest: OfflineRequest?
     
@@ -158,6 +151,26 @@ import Alamofire
         }
         
         return manager
+    }
+    
+    /// Current progress for all ongoing requests (ranges from 0 to 1)
+    public var totalProgress: Double {
+        get {
+            return progress.totalProgress
+        }
+    }
+    
+    /// Current progress for the current request (ranges from 0 to 1); Will only show values of 0 or 1 unless the request updates with OfflineRequestDelegate method
+    public var currentRequestProgress: Double {
+        get {
+            return progress.currentRequestProgress
+        }
+    }
+    
+    private var progress: (totalProgress: Double, currentRequestProgress: Double) = (1, 1) {
+        didSet {
+            delegate?.offlineRequestManager?(self, didUpdateToTotalProgress: progress.totalProgress, withCurrentRequestProgress: progress.currentRequestProgress)
+        }
     }
     
     private var pendingRequests = [OfflineRequest]()
@@ -357,7 +370,7 @@ import Alamofire
         requestCount = pendingRequests.count + currentRequestIndex
     }
     
-    /// <#Description#>
+    /// Writes the OfflineReqeustManager instances to the Documents directory
     public func saveToDisk() {
         if let path = OfflineRequestManager.filePath() {
             
@@ -373,12 +386,15 @@ import Alamofire
         }
     }
     
-    private func updateProgress(currentRequestProgress: Double) {
+    fileprivate func updateProgress(currentRequestProgress: Double) {
         let uploadUnit = 1 / max(1.0, Double(requestCount))
         let newProgressValue = (Double(self.currentRequestIndex) + currentRequestProgress) * uploadUnit
         let totalProgress = min(1, max(0, newProgressValue))
         progress = (totalProgress, currentRequestProgress)
     }
+}
+
+extension OfflineRequestManager: OfflineRequestDelegate {
     
     public func request(_ request: OfflineRequest, didUpdateTo progress: Double) {
         updateProgress(currentRequestProgress: progress)
@@ -387,7 +403,6 @@ import Alamofire
     public func requestNeedsSave(_ request: OfflineRequest) {
         saveToDisk()
     }
-    
 }
 
 private extension NSError {

@@ -24,8 +24,6 @@ Pod::Spec.new do |s|
   s.author           = { 'pomalley' => 'pomalley@makespace.com' }
   s.source           = { :git => 'https://github.com/makingspace/MSOfflineRequestManager.git', :tag => s.version.to_s }
 
-  s.ios.deployment_target = '9.0'
-
   s.source_files = 'MSOfflineRequestManager/Classes/**/*'
   s.dependency 'Alamofire'
 end

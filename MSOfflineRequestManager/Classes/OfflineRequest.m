@@ -10,7 +10,7 @@
 
 @implementation OfflineRequest
 
-- (nonnull instancetype)initWithDictionary:(NSDictionary<NSString *, id> * _Nonnull)dictionary {
+- (nullable instancetype)initWithDictionary:(NSDictionary<NSString *, id> * _Nonnull)dictionary {
     self = [super init];
     return self;
 }

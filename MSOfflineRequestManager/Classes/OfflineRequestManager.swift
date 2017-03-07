@@ -273,7 +273,7 @@ import Alamofire
             if let error = error as? NSError {
                 
                 if error.type() == .network {
-                    return
+                    return      //will retry on the next attemptSubmission call
                 }
                 else if request.shouldAttemptResubmission(forError: error) ||
                     (self.delegate?.offlineRequestManager?(self, shouldReattemptRequest: request, withError: error) ?? false) {

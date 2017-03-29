@@ -303,7 +303,12 @@ import Alamofire
     }
     
     private func shouldAttemptRequest(_ request: OfflineRequest) -> Bool {
-        let connectionDetected = (reachabilityManager?.networkReachabilityStatus != .notReachable) ?? connected
+        var reachable: Bool? = nil
+        if let manager = reachabilityManager {
+            reachable = manager.networkReachabilityStatus != .notReachable
+        }
+        
+        let connectionDetected = reachable ?? connected
         let delegateAllowed = (delegate?.offlineRequestManager?(self, shouldAttemptRequest: request) ?? true)
         
         return connectionDetected && delegateAllowed

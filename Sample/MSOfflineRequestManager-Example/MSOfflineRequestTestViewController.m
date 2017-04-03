@@ -22,7 +22,7 @@
     // Do any additional setup after loading the view.
     self.requestsAllowed = true;
     
-    [OfflineRequestManager manager].delegate = self;
+    [OfflineRequestManager defaultManager].delegate = self;
     [self updateLabels];
 }
 
@@ -38,24 +38,24 @@
 
 - (IBAction)queueRequest
 {
-    [[OfflineRequestManager manager] queueRequest:[MSTestRequest new]];
+    [[OfflineRequestManager defaultManager] queueRequest:[MSTestRequest new]];
     [self updateLabels];
 }
 
 - (void)updateLabels;
 {
-    OfflineRequestManager *manager = [OfflineRequestManager manager];
+    OfflineRequestManager *manager = [OfflineRequestManager defaultManager];
     self.completedRequestsLabel.text = [NSString stringWithFormat:@"%li", (long)manager.currentRequestIndex];
     self.pendingRequestsLabel.text = [NSString stringWithFormat:@"%li", (long)(manager.requestCount - manager.currentRequestIndex)];
     self.totalProgressLabel.text = [NSString stringWithFormat:@"%i%%", (int)(manager.totalProgress * 100)];
 }
 
-- (OfflineRequest *)offlineRequestWithDictionary:(NSDictionary<NSString *,id> *)dictionary
+- (id<OfflineRequest>)offlineRequestWithDictionary:(NSDictionary<NSString *,id> *)dictionary
 {
-    return [MSTestRequest new];
+    return [[MSTestRequest alloc] initWithDictionary:dictionary];
 }
 
-- (BOOL)offlineRequestManager:(OfflineRequestManager *)manager shouldAttemptRequest:(OfflineRequest *)request
+- (BOOL)offlineRequestManager:(OfflineRequestManager *)manager shouldAttemptRequest:(id<OfflineRequest>)request
 {
     return self.requestsAllowed;
 }
@@ -70,12 +70,12 @@
     self.connectionStatusLabel.text = connected ? @"Online" : @"Offline";
 }
 
-- (void)offlineRequestManager:(OfflineRequestManager *)manager didFinishRequest:(OfflineRequest *)request
+- (void)offlineRequestManager:(OfflineRequestManager *)manager didFinishRequest:(id<OfflineRequest>)request
 {
     [self updateLabels];
 }
 
-- (void)offlineRequestManager:(OfflineRequestManager *)manager requestDidFail:(OfflineRequest *)request withError:(NSError *)error
+- (void)offlineRequestManager:(OfflineRequestManager *)manager requestDidFail:(id<OfflineRequest>)request withError:(NSError *)error
 {
     [self updateLabels];
 }

@@ -9,6 +9,32 @@
 import Foundation
 import Alamofire
 
+/// Protocol for objects enqueued in OfflineRequestManager to perform operations
+@objc public protocol OfflineRequest {
+    
+    /// Called whenever the request manager instructs the object to perform its network request
+    ///
+    /// - Parameter completion: completion fired when done, either with an Error or nothing in the case of success
+    func perform(completion: @escaping (Error?) -> Swift.Void)
+    
+    /// Property declaration that must be provided so that the OfflineRequestManager can receive callbacks where appropriate
+    weak var requestDelegate: OfflineRequestDelegate? { get set }
+    
+    /// Optional initializer that is necessary for recovering outstanding requests from disk when restarting the app
+    init?(dictionary: [String : Any])
+    
+    /// Optionally provides a dictionary to be written to disk; This dictionary is what will be passed to the initializer above
+    ///
+    /// - Returns: Returns a dictionary containing any necessary information to retry the request if the app is terminated
+    @objc optional func dictionaryRepresentation() -> [String : Any]
+    
+    /// Allows the OfflineRequest object to recover from an error if desired; Only called if the error is not network related
+    ///
+    /// - Parameter error: Error associated with the failure, which should be equal to what was passed back in the perform(completion:) call
+    /// - Returns: a Bool indicating whether perform(completion:) should be called again or the request should be dropped
+    @objc optional func shouldAttemptResubmission(forError error: Error) -> Bool
+}
+
 /// Protocol for receiving callbacaks from OfflineRequestManager and reconfiguring a new OfflineRequestManager from dictionaries saved to disk in the case of 
 /// previous requests that never completed
 @objc public protocol OfflineRequestManagerDelegate {
@@ -137,21 +163,15 @@ import Alamofire
     /// Time limit in seconds before OfflineRequestManager will kill an ongoing OfflineRequest
     public var requestTimeLimit: TimeInterval = 90
     
-    /// Name of file in Documents directory to which OfflineRequestManager object is archived
-    public static var fileName = "offline_request_manager"
+    /// Name of file in Documents directory to which OfflineRequestManager object is archived by default
+    private static let defaultFileName = "offline_request_manager"
     
-    /// Shared singleton OfflineRequestManager; creates a new object or pulls up the object written to disk if possible
-    static public var manager: OfflineRequestManager {
-        guard let manager = sharedInstance else {
-            
-            let manager = archivedManager() ?? OfflineRequestManager()
-            
-            sharedInstance = manager
-            return manager
-        }
-        
-        return manager
+    /// Default singleton OfflineRequestManager
+    static public var defaultManager: OfflineRequestManager {
+        return manager(withFileName: defaultFileName)
     }
+    
+    private static var managers = [String: OfflineRequestManager]()
     
     /// Current progress for all ongoing requests (ranges from 0 to 1)
     public var totalProgress: Double {
@@ -176,10 +196,10 @@ import Alamofire
     private var pendingRequests = [OfflineRequest]()
     private var pendingRequestDictionaries = [[String: Any]]()
     
-    private static var sharedInstance: OfflineRequestManager?
-    
     private var backgroundTask: UIBackgroundTaskIdentifier?
     private var submissionTimer: Timer?
+    
+    private var fileName = ""
     
     override init() {
         super.init()
@@ -207,16 +227,31 @@ import Alamofire
         aCoder.encode(pendingRequestDictionaries, forKey: "pendingRequestDictionaries")
     }
     
-    /// instantiates the OfflineRequestManager already written to disk if possible
-    static public func archivedManager() -> OfflineRequestManager? {
-        guard let filePath = filePath(), let archivedManager = NSKeyedUnarchiver.unarchiveObject(withFile: filePath) as? OfflineRequestManager else {
+    /// Generates a OfflineRequestManager instance tied to a file name in the Documents directory; creates a new object or pulls up the object written to disk if possible
+    static public func manager(withFileName fileName: String) -> OfflineRequestManager {
+        guard let manager = managers[fileName] else {
+            
+            let manager = archivedManager(fileName: fileName) ?? OfflineRequestManager()
+            
+            manager.fileName = fileName
+            managers[fileName] = manager
+            return manager
+        }
+        
+        return manager
+    }
+    
+    /// instantiates the OfflineRequestManager already written to disk if possible; Exposed for testing
+    static public func archivedManager(fileName: String = defaultFileName) -> OfflineRequestManager? {
+        guard let filePath = filePath(fileName: fileName), let archivedManager = NSKeyedUnarchiver.unarchiveObject(withFile: filePath) as? OfflineRequestManager else {
             return nil
         }
         
+        archivedManager.fileName = fileName
         return archivedManager
     }
     
-    private static func filePath() -> String? {
+    private static func filePath(fileName: String) -> String? {
         do {
             return try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false).appendingPathComponent(fileName).path
         }
@@ -258,7 +293,7 @@ import Alamofire
         
         updateProgress(currentRequestProgress: 0)
         
-        request.delegate = self
+        request.requestDelegate = self
         
         delegate?.offlineRequestManager?(self, didStartRequest: request)
         
@@ -266,30 +301,32 @@ import Alamofire
             
             NSObject.cancelPreviousPerformRequests(withTarget: self)
             
-            guard request == self.currentRequest else { return }
+            if let comparableRequest = request as? _OptionalNilComparisonType, comparableRequest != self.currentRequest {
+                return
+            }
             
             self.currentRequest = nil
             
-            if let error = error as? NSError {
+            if let error = error as NSError? {
                 
                 if error.type() == .network {
                     return      //will retry on the next attemptSubmission call
                 }
-                else if request.shouldAttemptResubmission(forError: error) ||
-                    (self.delegate?.offlineRequestManager?(self, shouldReattemptRequest: request, withError: error) ?? false) {
+                else if request.shouldAttemptResubmission?(forError: error) == true ||
+                    self.delegate?.offlineRequestManager?(self, shouldReattemptRequest: request, withError: error) == true {
                     
                     self.attemptSubmission()
                     return
                 }
                 else {
                     
-                    self.popRequest(request)
+                    self.popRequest()
                     self.delegate?.offlineRequestManager?(self, requestDidFail: request, withError: error)
                 }
             }
             else {
                 
-                self.popRequest(request)
+                self.popRequest()
                 self.delegate?.offlineRequestManager?(self, didFinishRequest: request)
             }
         }
@@ -298,7 +335,7 @@ import Alamofire
     }
     
     @objc func killRequest(_ request: OfflineRequest) {
-        self.popRequest(request)
+        self.popRequest()
         self.delegate?.offlineRequestManager?(self, requestDidFail: request, withError: NSError.genericError())
     }
     
@@ -314,26 +351,25 @@ import Alamofire
         return connectionDetected && delegateAllowed
     }
     
-    private func popRequest(_ request: OfflineRequest) {
+    private func popRequest() {
+        guard pendingRequests.count > 0 else { return }
         
-        if let index = pendingRequests.index(of: request) {
+        pendingRequests.removeFirst()
+        
+        self.updateProgress(currentRequestProgress: 1)
+        
+        if pendingRequests.count == 0 {
             
-            self.updateProgress(currentRequestProgress: 1)
-            
-            pendingRequests.remove(at: index)
-            
-            if pendingRequests.count == 0 {
-                
-                endBackgroundTask()
-                currentRequestIndex = 0
-                progress = (1, 1)
-            }
-            else {
-                currentRequestIndex += 1
-            }
+            endBackgroundTask()
+            currentRequestIndex = 0
+            progress = (1, 1)
+        }
+        else {
+            currentRequestIndex += 1
+            attemptSubmission()
         }
         
-        attemptSubmission()
+        saveToDisk()
     }
     
     /// Clears out the current OfflineRequest queue and returns to a neutral state
@@ -342,7 +378,7 @@ import Alamofire
         currentRequestIndex = 0
         progress = (1, 1)
         
-        currentRequest?.delegate = nil
+        currentRequest?.requestDelegate = nil
         currentRequest = nil
         saveToDisk()
     }
@@ -361,7 +397,7 @@ import Alamofire
         addRequests(requests)
         
         for request in requests {
-            if request.dictionaryRepresentation() != nil {
+            if request.dictionaryRepresentation?() != nil {
                 saveToDisk()
                 break
             }
@@ -377,12 +413,12 @@ import Alamofire
     
     /// Writes the OfflineReqeustManager instances to the Documents directory
     public func saveToDisk() {
-        if let path = OfflineRequestManager.filePath() {
+        if let path = OfflineRequestManager.filePath(fileName: fileName) {
             
             pendingRequestDictionaries.removeAll()
             
             for request in pendingRequests {
-                if let requestDict = request.dictionaryRepresentation() {
+                if let requestDict = request.dictionaryRepresentation?() {
                     pendingRequestDictionaries.append(requestDict)
                 }
             }

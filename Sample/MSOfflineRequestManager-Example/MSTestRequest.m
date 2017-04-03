@@ -10,12 +10,18 @@
 
 @implementation MSTestRequest
 
+- (instancetype)initWithDictionary:(NSDictionary<NSString *,id> *)dictionary
+{
+    self = [super init];
+    return self;
+}
+
 - (NSDictionary<NSString *,id> *)dictionaryRepresentation
 {
     return @{};
 }
 
-- (void)performRequestWithCompletion:(void (^)(NSError * _Nullable))completion
+- (void)performWithCompletion:(void (^)(NSError * _Nullable))completion
 {
     NSURLSessionConfiguration *defaultConfigObject = [NSURLSessionConfiguration defaultSessionConfiguration];
     
@@ -46,7 +52,7 @@ didFinishDownloadingToURL:(NSURL *)location
  totalBytesWritten:(int64_t)totalBytesWritten
 totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite
 {
-    [self.delegate request:self didUpdateTo:((float)totalBytesWritten / (float)totalBytesExpectedToWrite)];
+    [self.requestDelegate request:self didUpdateTo:((float)totalBytesWritten / (float)totalBytesExpectedToWrite)];
 }
 
 @end

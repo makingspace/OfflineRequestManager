@@ -23,15 +23,21 @@ class MockRequest: OfflineRequest {
     
     var shouldFixError = false
     
-    override func dictionaryRepresentation() -> [String : Any]? {
+    var requestDelegate: OfflineRequestDelegate?
+    
+    required init?(dictionary: [String : Any]) {
+        self.dictionary = dictionary
+    }
+    
+    func dictionaryRepresentation() -> [String : Any] {
         return dictionary
     }
     
-    override func perform(completion: @escaping (Error?) -> Void) {
+    func perform(completion: @escaping (Error?) -> Void) {
         Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
             self.currentProgress += MockRequest.progressIncrement
             
-            self.delegate?.request(self, didUpdateTo: self.currentProgress)
+            self.requestDelegate?.request(self, didUpdateTo: self.currentProgress)
             
             if self.currentProgress >= 1 {
                 timer.invalidate()
@@ -42,7 +48,7 @@ class MockRequest: OfflineRequest {
         }
     }
     
-    override func shouldAttemptResubmission(forError error: Error) -> Bool {
+    func shouldAttemptResubmission(forError error: Error) -> Bool {
         if shouldFixError {
             self.error = nil
         }
@@ -63,9 +69,7 @@ class OfflineRequestManagerListener: NSObject, OfflineRequestManagerDelegate {
     var reattemptBlock: ((OfflineRequest, NSError) -> Bool)?
     
     func offlineRequest(withDictionary dictionary: [String : Any]) -> OfflineRequest? {
-        let request = MockRequest()
-        request.dictionary = dictionary
-        return request
+        return MockRequest(dictionary: dictionary)
     }
     
     func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateToTotalProgress totalProgress: Double, withCurrentRequestProgress currentRequestProgress: Double) {
@@ -102,11 +106,11 @@ class MSOfflineRequestManagerTests: QuickSpec {
     
     override func spec() {
         
-        let manager = OfflineRequestManager()
+        let testFileName = "test_manager"
+        let manager = OfflineRequestManager.manager(withFileName: testFileName)
         let listener = OfflineRequestManagerListener()
         
         beforeSuite {
-            OfflineRequestManager.fileName = "test_manager"
             manager.reachabilityManager?.stopListening()
             manager.reachabilityManager = nil
             manager.saveToDisk()
@@ -120,10 +124,10 @@ class MSOfflineRequestManagerTests: QuickSpec {
         
         describe("archivedManager") {
             it("should read the archived manager from disk") {
-                manager.queueRequest(MockRequest())
-                manager.queueRequest(MockRequest())
+                manager.queueRequest(MockRequest(dictionary: [:])!)
+                manager.queueRequest(MockRequest(dictionary: [:])!)
                 
-                var archivedManager = OfflineRequestManager.archivedManager()
+                var archivedManager = OfflineRequestManager.archivedManager(fileName: testFileName)
                 
                 archivedManager?.delegate = OfflineRequestManagerListener()
                 expect(archivedManager).toNot(beNil())
@@ -137,9 +141,9 @@ class MSOfflineRequestManagerTests: QuickSpec {
                 
                 expect(request.dictionary["test"]).to(beNil())
                 request.dictionary["test"] = "value"
-                request.delegate?.requestNeedsSave(request)
+                request.requestDelegate?.requestNeedsSave(request)
                 
-                archivedManager = OfflineRequestManager.archivedManager()
+                archivedManager = OfflineRequestManager.archivedManager(fileName: testFileName)
                 
                 archivedManager?.delegate = OfflineRequestManagerListener()
                 expect(archivedManager).toNot(beNil())
@@ -163,7 +167,7 @@ class MSOfflineRequestManagerTests: QuickSpec {
             
             it("should indicate when a request has started") {
                 waitUntil { done in
-                    let request = MockRequest()
+                    let request = MockRequest(dictionary: [:])!
                     
                     listener.triggerBlock = { type in
                         switch type {
@@ -171,7 +175,6 @@ class MSOfflineRequestManagerTests: QuickSpec {
                             expect(manager.totalProgress).to(equal(0))
                             expect(manager.currentRequestProgress).to(equal(0))
                             
-                            expect(returnedRequest).to(equal(request))
                             expect((returnedRequest as? MockRequest)?.complete).to(beFalse())
                             done()
                         default:
@@ -185,7 +188,7 @@ class MSOfflineRequestManagerTests: QuickSpec {
             
             it("should indicate when a request has finished") {
                 waitUntil { done in
-                    let request = MockRequest()
+                    let request = MockRequest(dictionary: [:])!
                     
                     listener.triggerBlock = { type in
                         switch type {
@@ -193,7 +196,6 @@ class MSOfflineRequestManagerTests: QuickSpec {
                             expect(manager.totalProgress).to(equal(1))
                             expect(manager.currentRequestProgress).to(equal(1))
                             
-                            expect(returnedRequest).to(equal(request))
                             expect((returnedRequest as? MockRequest)?.complete).to(beTrue())
                             done()
                         default:
@@ -208,7 +210,7 @@ class MSOfflineRequestManagerTests: QuickSpec {
             
             it("should indicate when a request has failed") {
                 waitUntil { done in
-                    let request = MockRequest()
+                    let request = MockRequest(dictionary: [:])!
                     let error = NSError(domain: "test", code: -1, userInfo: nil)
                     request.error = error
                     
@@ -218,7 +220,6 @@ class MSOfflineRequestManagerTests: QuickSpec {
                             expect(manager.totalProgress).to(equal(1))
                             expect(manager.currentRequestProgress).to(equal(1))
                             
-                            expect(returnedRequest).to(equal(request))
                             expect((returnedRequest as? MockRequest)?.complete).to(beTrue())
                             expect(returnedError).to(equal(error))
                             done()
@@ -264,7 +265,7 @@ class MSOfflineRequestManagerTests: QuickSpec {
                             }
                         }
                         
-                        manager.queueRequest(MockRequest())
+                        manager.queueRequest(MockRequest(dictionary: [:])!)
                     }
                 }
             }
@@ -277,19 +278,19 @@ class MSOfflineRequestManagerTests: QuickSpec {
                         expect(manager.currentRequestProgress).to(equal(1))
                         
                         var i = 0.0
-                        let requests = [MockRequest(), MockRequest(), MockRequest()]
+                        let requests = [MockRequest(dictionary: [:])!, MockRequest(dictionary: [:])!, MockRequest(dictionary: [:])!]
                         
                         listener.triggerBlock = { type in
                             switch type {
                             case .progress(let returnedRequest, let totalComplete, let currentRequestComplete):
-                                guard let request = returnedRequest as? MockRequest, let index = requests.index(of: request) else {
+                                guard let request = returnedRequest as? MockRequest else {
                                     XCTFail("Failed to find test request")
                                     break
                                 }
                                 
                                 expect(currentRequestComplete).to(equal(request.currentProgress))
                                 
-                                let diff = abs(totalComplete - (Double(index) + request.currentProgress) / Double(requests.count))
+                                let diff = abs(totalComplete - (Double(manager.currentRequestIndex) + request.currentProgress) / Double(requests.count))
                                 expect(diff).to(beLessThan(0.01))
                                 if totalComplete >= 1 {
                                     listener.triggerBlock = nil
@@ -314,14 +315,13 @@ class MSOfflineRequestManagerTests: QuickSpec {
             context("default") {
                 it("should not reattempt and pass the error back") {
                     waitUntil { done in
-                        let request = MockRequest()
+                        let request = MockRequest(dictionary: [:])!
                         let error = NSError(domain: "test", code: -1, userInfo: nil)
                         request.error = error
                         
                         listener.triggerBlock = { type in
                             switch type {
-                            case .failed(let returnedRequest, let returnedError):
-                                expect(returnedRequest).to(equal(request))
+                            case .failed(_, let returnedError):
                                 expect(returnedError).to(equal(error))
                                 done()
                             default:
@@ -337,7 +337,7 @@ class MSOfflineRequestManagerTests: QuickSpec {
             context("reconfigured by request") {
                 it("should reconfigure itself and succeed on the next attempt") {
                     waitUntil { done in
-                        let request = MockRequest()
+                        let request = MockRequest(dictionary: [:])!
                         let error = NSError(domain: "test", code: -1, userInfo: nil)
                         request.error = error
                         request.shouldFixError = true
@@ -345,7 +345,6 @@ class MSOfflineRequestManagerTests: QuickSpec {
                         listener.triggerBlock = { type in
                             switch type {
                             case .finished(let returnedRequest):
-                                expect(returnedRequest).to(equal(request))
                                 expect((returnedRequest as? MockRequest)?.complete).to(beTrue())
                                 done()
                             default:
@@ -361,7 +360,7 @@ class MSOfflineRequestManagerTests: QuickSpec {
             context("reconfigured by delegate") {
                 it("should reconfigure the request and succeed on the next attempt") {
                     waitUntil { done in
-                        let request = MockRequest()
+                        let request = MockRequest(dictionary: [:])!
                         let error = NSError(domain: "test", code: -1, userInfo: nil)
                         request.error = error
                         
@@ -378,7 +377,6 @@ class MSOfflineRequestManagerTests: QuickSpec {
                         listener.triggerBlock = { type in
                             switch type {
                             case .finished(let returnedRequest):
-                                expect(returnedRequest).to(equal(request))
                                 expect((returnedRequest as? MockRequest)?.complete).to(beTrue())
                                 done()
                             default:

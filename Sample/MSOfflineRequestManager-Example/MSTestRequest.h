@@ -8,8 +8,13 @@
 
 @import MSOfflineRequestManager;
 
-@interface MSTestRequest : OfflineRequest<NSURLSessionDownloadDelegate>
+@interface MSTestRequest : NSObject<OfflineRequest, NSURLSessionDownloadDelegate>
 
 @property (copy, nonatomic, nullable) void (^completion) (NSError * _Nullable);
+
+@property (nonatomic, weak) id <OfflineRequestDelegate> _Nullable requestDelegate;
+
+- (nullable instancetype)initWithDictionary:(NSDictionary<NSString *, id> * _Nonnull)dictionary;
+- (void)performWithCompletion:(void (^ _Nonnull)(NSError * _Nullable))completion;
 
 @end

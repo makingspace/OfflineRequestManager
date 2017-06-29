@@ -9,8 +9,19 @@
 import Foundation
 import Alamofire
 
+
+/// Protocol for objects that can be converted to and from Dictionaries
+@objc public protocol DictionaryRepresentable {
+    /// Optional initializer that is necessary for recovering outstanding requests from disk when restarting the app
+    init?(dictionary: [String : Any])
+    
+    /// Optionally provides a dictionary to be written to disk; This dictionary is what will be passed to the initializer above
+    ///
+    /// - Returns: Returns a dictionary containing any necessary information to retry the request if the app is terminated
+    @objc optional func dictionaryRepresentation() -> [String : Any]
+}
 /// Protocol for objects enqueued in OfflineRequestManager to perform operations
-@objc public protocol OfflineRequest {
+@objc public protocol OfflineRequest: DictionaryRepresentable {
     
     /// Called whenever the request manager instructs the object to perform its network request
     ///
@@ -19,14 +30,6 @@ import Alamofire
     
     /// Property declaration that must be provided so that the OfflineRequestManager can receive callbacks where appropriate
     weak var requestDelegate: OfflineRequestDelegate? { get set }
-    
-    /// Optional initializer that is necessary for recovering outstanding requests from disk when restarting the app
-    init?(dictionary: [String : Any])
-    
-    /// Optionally provides a dictionary to be written to disk; This dictionary is what will be passed to the initializer above
-    ///
-    /// - Returns: Returns a dictionary containing any necessary information to retry the request if the app is terminated
-    @objc optional func dictionaryRepresentation() -> [String : Any]
     
     /// Allows the OfflineRequest object to recover from an error if desired; Only called if the error is not network related
     ///

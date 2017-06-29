@@ -18,7 +18,7 @@ Pod::Spec.new do |s|
 #   * Finally, don't worry about the indent, CocoaPods strips it!
 
   s.description      = 'A framework for managing network requests to ensure that they are sent even if the device is online or the app closes'
-
+  s.ios.deployment_target = '9.0'
   s.homepage         = 'https://github.com/makingspace/MSOfflineRequestManager'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'pomalley' => 'pomalley@makespace.com' }

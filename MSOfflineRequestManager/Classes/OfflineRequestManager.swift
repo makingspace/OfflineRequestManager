@@ -38,6 +38,32 @@ import Alamofire
     @objc optional func shouldAttemptResubmission(forError error: Error) -> Bool
 }
 
+/// Convenience methods for generating and working with dictionaries
+public extension OfflineRequest where Self: NSObject {
+    
+    /// Generates a dictionary using the values associated with the given key paths
+    ///
+    /// - Parameter keyPaths: key paths of the properties to include in the dictionary
+    /// - Returns: dictionary of the key paths and their associated values
+    func dictionary(withKeyPaths keyPaths: [String]) -> [String : Any] {
+        var dictionary = [String : Any]()
+        keyPaths.forEach { dictionary[$0] = self.value(forKey: $0) }
+        return dictionary
+    }
+    
+    /// Parses through the provided dictionary and sets the appropriate values if they are found
+    ///
+    /// - Parameters:
+    ///   - dictionary: dictionary containing values for the key paths
+    ///   - keyPaths: array of key paths
+    func sync(withDictionary dictionary: [String: Any], usingKeyPaths keyPaths: [String]) {
+        keyPaths.forEach { path in
+            guard let value = dictionary[path] else { return }
+            self.setValue(value, forKey: path)
+        }
+    }
+}
+
 /// Protocol for receiving callbacaks from OfflineRequestManager and reconfiguring a new OfflineRequestManager from dictionaries saved to disk in the case of 
 /// previous requests that never completed
 @objc public protocol OfflineRequestManagerDelegate {
@@ -164,7 +190,7 @@ import Alamofire
     public var reachabilityManager = NetworkReachabilityManager()
     
     /// Time limit in seconds before OfflineRequestManager will kill an ongoing OfflineRequest
-    public var requestTimeLimit: TimeInterval = 90
+    public var requestTimeLimit: TimeInterval = 120
     
     /// Name of file in Documents directory to which OfflineRequestManager object is archived by default
     private static let defaultFileName = "offline_request_manager"

@@ -142,6 +142,11 @@ public extension OfflineRequest where Self: NSObject {
     ///
     /// - Parameter request: OfflineRequest that has updated and needs to be rewritten to disk
     @objc func requestNeedsSave(_ request: OfflineRequest)
+    
+    /// Callback indicating that the OfflineRequestManager should give the request more time to complete
+    ///
+    /// - Parameter request: OfflineRequest that is continuing to process and needs more time to complete
+    @objc func requestSentHeartbeat(_ request: OfflineRequest)
 }
     
 // Class for handling outstanding network requests; all data is written to disk in the case of app termination
@@ -472,6 +477,11 @@ extension OfflineRequestManager: OfflineRequestDelegate {
     
     public func requestNeedsSave(_ request: OfflineRequest) {
         saveToDisk()
+    }
+    
+    public func requestSentHeartbeat(_ request: OfflineRequest) {
+        NSObject.cancelPreviousPerformRequests(withTarget: self)
+        perform(#selector(killRequest(_:)), with: request, afterDelay: requestTimeLimit)
     }
 }
 

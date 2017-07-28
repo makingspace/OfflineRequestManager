@@ -325,7 +325,7 @@ class MSOfflineRequestManagerTests: QuickSpec {
             
             context("reconfigured by request") {
                 it("should reconfigure itself and succeed on the next attempt") {
-                    waitUntil(timeout: 120, action: { (done) in
+                    waitUntil { done in
                         let request = MockRequest(dictionary: [:])!
                         let error = NSError(domain: "test", code: -1, userInfo: nil)
                         request.error = error
@@ -342,13 +342,13 @@ class MSOfflineRequestManagerTests: QuickSpec {
                         }
                         
                         manager.queueRequest(request)
-                    })
+                    }
                 }
             }
             
             context("reconfigured by delegate") {
                 it("should reconfigure the request and succeed on the next attempt") {
-                    waitUntil(timeout: 120, action: { (done) in
+                    waitUntil { done in
                         let request = MockRequest(dictionary: [:])!
                         let error = NSError(domain: "test", code: -1, userInfo: nil)
                         request.error = error
@@ -374,7 +374,7 @@ class MSOfflineRequestManagerTests: QuickSpec {
                         }
                         
                         manager.queueRequest(request)
-                    })
+                    }
                 }
             }
         }

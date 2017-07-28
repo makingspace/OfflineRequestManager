@@ -370,6 +370,7 @@ public extension OfflineRequest where Self: NSObject {
     
     @objc func killRequest(_ request: OfflineRequest) {
         self.popRequest()
+        currentRequest = nil
         self.delegate?.offlineRequestManager?(self, requestDidFail: request, withError: NSError.genericError())
     }
     

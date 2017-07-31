@@ -473,15 +473,7 @@ public extension Array where Element: RequestAction {
     /// Writes the OfflineReqeustManager instances to the Documents directory
     public func saveToDisk() {
         if let path = OfflineRequestManager.filePath(fileName: fileName) {
-            
-            pendingRequestDictionaries.removeAll()
-            
-            for action in pendingActions {
-                if let requestDict = action.request.dictionaryRepresentation?() {
-                    pendingRequestDictionaries.append(requestDict)
-                }
-            }
-            
+            pendingRequestDictionaries = pendingActions.filter { $0.request.dictionaryRepresentation?() != nil }.map { $0.request.dictionaryRepresentation!() }
             NSKeyedArchiver.archiveRootObject(self, toFile: path)
         }
     }

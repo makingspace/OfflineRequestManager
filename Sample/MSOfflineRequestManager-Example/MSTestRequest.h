@@ -13,6 +13,7 @@
 @property (copy, nonatomic, nullable) void (^completion) (NSError * _Nullable);
 
 @property (nonatomic, weak) id <OfflineRequestDelegate> _Nullable requestDelegate;
+@property (nonatomic, copy) NSString * _Nullable requestID;
 
 - (nullable instancetype)initWithDictionary:(NSDictionary<NSString *, id> * _Nonnull)dictionary;
 - (void)performWithCompletion:(void (^ _Nonnull)(NSError * _Nullable))completion;

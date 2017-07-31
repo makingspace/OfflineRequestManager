@@ -45,9 +45,9 @@
 - (void)updateLabels;
 {
     OfflineRequestManager *manager = [OfflineRequestManager defaultManager];
-    self.completedRequestsLabel.text = [NSString stringWithFormat:@"%li", (long)manager.currentRequestIndex];
-    self.pendingRequestsLabel.text = [NSString stringWithFormat:@"%li", (long)(manager.requestCount - manager.currentRequestIndex)];
-    self.totalProgressLabel.text = [NSString stringWithFormat:@"%i%%", (int)(manager.totalProgress * 100)];
+    self.completedRequestsLabel.text = [NSString stringWithFormat:@"%li", (long)manager.completedRequestCount];
+    self.pendingRequestsLabel.text = [NSString stringWithFormat:@"%li", (long)(manager.totalRequestCount - manager.completedRequestCount)];
+    self.totalProgressLabel.text = [NSString stringWithFormat:@"%i%%", (int)(manager.progress * 100)];
 }
 
 - (id<OfflineRequest>)offlineRequestWithDictionary:(NSDictionary<NSString *,id> *)dictionary
@@ -60,9 +60,9 @@
     return self.requestsAllowed;
 }
 
-- (void)offlineRequestManager:(OfflineRequestManager *)manager didUpdateToTotalProgress:(double)totalProgress withCurrentRequestProgress:(double)currentRequestProgress
+- (void)offlineRequestManager:(OfflineRequestManager *)manager didUpdateProgress:(double)progress
 {
-    self.totalProgressLabel.text = [NSString stringWithFormat:@"%i%%", (int)(totalProgress * 100)];
+    self.totalProgressLabel.text = [NSString stringWithFormat:@"%i%%", (int)(progress * 100)];
 }
 
 - (void)offlineRequestManager:(OfflineRequestManager *)manager didUpdateConnectionStatus:(BOOL)connected

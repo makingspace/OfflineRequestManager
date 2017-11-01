@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'MSOfflineRequestManager'
-  s.version          = '0.3.1'
+  s.version          = '0.4.0'
   s.summary          = 'A framework for managing network requests to ensure that they are sent even if the device is online or the app closes'
 
 # This description is used to generate tags and improve search results.

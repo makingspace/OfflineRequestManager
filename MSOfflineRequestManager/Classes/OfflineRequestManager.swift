@@ -9,7 +9,6 @@
 import Foundation
 import Alamofire
 
-
 /// Protocol for objects that can be converted to and from Dictionaries
 public protocol DictionaryRepresentable {
     /// Optional initializer that is necessary for recovering outstanding requests from disk when restarting the app
@@ -18,11 +17,13 @@ public protocol DictionaryRepresentable {
     /// Optionally provides a dictionary to be written to disk; This dictionary is what will be passed to the initializer above
     ///
     /// - Returns: Returns a dictionary containing any necessary information to retry the request if the app is terminated
-    func dictionaryRepresentation() -> [String : Any]?
+    var dictionaryRepresentation: [String : Any]? { get }
 }
 
 public extension DictionaryRepresentable {
-    func dictionaryRepresentation() -> [String : Any]? {
+    init?(dictionary: [String : Any]) { return nil }
+    
+    var dictionaryRepresentation: [String : Any]? {
         return nil
     }
 }
@@ -479,7 +480,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
         addRequests(requests)
         
         for request in requests {
-            if request.dictionaryRepresentation() != nil {
+            if request.dictionaryRepresentation != nil {
                 saveToDisk()
                 break
             }
@@ -496,7 +497,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     /// Writes the OfflineReqeustManager instances to the Documents directory
     public func saveToDisk() {
         if let path = OfflineRequestManager.filePath(fileName: fileName) {
-            pendingRequestDictionaries = pendingActions.filter { $0.request.dictionaryRepresentation() != nil }.map { $0.request.dictionaryRepresentation()! }
+            pendingRequestDictionaries = pendingActions.filter { $0.request.dictionaryRepresentation != nil }.map { $0.request.dictionaryRepresentation! }
             NSKeyedArchiver.archiveRootObject(self, toFile: path)
         }
     }

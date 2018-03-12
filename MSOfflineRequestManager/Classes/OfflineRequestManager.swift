@@ -406,7 +406,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     @objc func killRequest(_ requestID: String?) {
         guard let action = ongoingActions.action(forRequestID: requestID) else { return }
         ongoingActions.removeAction(action)
-        completeAction(action, error: NSError.genericError)
+        completeAction(action, error: NSError.timeOutError)
     }
     
     private func completeAction(_ action: RequestAction, error: Error?) {
@@ -542,7 +542,7 @@ private extension NSError {
         }
     }
     
-    static var genericError: NSError {
-        return NSError(domain: "com.makespace.OfflineRequestManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "Offline Request Failed to Complete"])
+    static var timeOutError: NSError {
+        return NSError(domain: "com.makespace.offlineRequestManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Offline Request Timed Out"])
     }
 }

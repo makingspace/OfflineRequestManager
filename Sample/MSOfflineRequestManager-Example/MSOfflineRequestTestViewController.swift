@@ -14,6 +14,7 @@ class MSOfflineRequestTestViewController: UIViewController {
     @IBOutlet weak var completedRequestsLabel: UILabel!
     @IBOutlet weak var pendingRequestsLabel: UILabel!
     @IBOutlet weak var totalProgressLabel: UILabel!
+    @IBOutlet weak var lastRequestLabel: UILabel!
     
     private var requestsAllowed = true
     
@@ -35,7 +36,7 @@ class MSOfflineRequestTestViewController: UIViewController {
     }
     
     @IBAction func queueRequest() {
-        offlineRequestManager.queueRequest(MSTestRequest())
+        offlineRequestManager.queueRequest(MSTestRequest.newRequest())
         updateLabels()
     }
     
@@ -64,6 +65,9 @@ extension MSOfflineRequestTestViewController: OfflineRequestManagerDelegate {
     
     func offlineRequestManager(_ manager: OfflineRequestManager, didFinishRequest request: OfflineRequest) {
         updateLabels()
+        
+        guard let testRequest = request as? MSTestRequest else { return }
+        lastRequestLabel.text = "Request #\(testRequest.identifier) Complete"
     }
     
     func offlineRequestManager(_ manager: OfflineRequestManager, requestDidFail request: OfflineRequest, withError error: Error) {
@@ -78,16 +82,31 @@ class MSTestRequest: NSObject, OfflineRequest {
     var requestDelegate: OfflineRequestDelegate?
     var requestID: String?
     
-    override init() {
+    static var testCount = 1
+    let identifier: Int
+    
+    class func newRequest() -> MSTestRequest {
+        let request = MSTestRequest(identifier: testCount)
+        testCount += 1
+        return request
+    }
+    
+    /// Initializer with an arbitrary number to demonstrate data persistence
+    ///
+    /// - Parameter identifier: arbitrary number
+    init(identifier: Int) {
+        self.identifier = identifier
         super.init()
     }
     
-    required init?(dictionary: [String : Any]) {
-        super.init()
+    /// Dictionary methods are optional for simple use cases, but required for saving to disk in the case of app termination
+    required convenience init?(dictionary: [String : Any]) {
+        guard let identifier = dictionary["identifier"] as? Int else { return  nil}
+        self.init(identifier: identifier)
     }
     
     var dictionaryRepresentation: [String : Any]? {
-        return [:]
+        return ["identifier" : identifier]
     }
     
     func perform(completion: @escaping (Error?) -> Void) {

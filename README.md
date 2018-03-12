@@ -54,7 +54,7 @@ class ClassThatHandlesNetworkRequests: OfflineRequestManagerDelegate {
     }
     
     func offlineRequest(withDictionary dictionary: [String : Any]) -> OfflineRequest? {
-        return MSTestRequest(dictionary: dictionary)
+        return MoreRealisticRequest(dictionary: dictionary)
     }
 }
 ```

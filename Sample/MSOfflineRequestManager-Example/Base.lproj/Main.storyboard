@@ -1,37 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="12118" systemVersion="16E195" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="OjW-2l-1cA">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="13771" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="BYZ-38-t0r">
     <device id="retina4_7" orientation="portrait">
         <adaptation id="fullscreen"/>
     </device>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="12086"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="13772"/>
         <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--View Controller-->
-        <scene sceneID="KtN-gX-jHO">
-            <objects>
-                <viewController id="OjW-2l-1cA" sceneMemberID="viewController">
-                    <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="2oE-R0-1PB"/>
-                        <viewControllerLayoutGuide type="bottom" id="CGi-kT-eMH"/>
-                    </layoutGuides>
-                    <view key="view" contentMode="scaleToFill" id="YnC-KD-2UT">
-                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                    </view>
-                </viewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="Pgg-bd-MMK" userLabel="First Responder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="-890" y="37"/>
-        </scene>
         <!--Offline Request Test View Controller-->
         <scene sceneID="tne-QT-ifu">
             <objects>
-                <viewController id="BYZ-38-t0r" customClass="MSOfflineRequestTestViewController" sceneMemberID="viewController">
+                <viewController id="BYZ-38-t0r" customClass="MSOfflineRequestTestViewController" customModule="MSOfflineRequestManager_Example" customModuleProvider="target" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="y3c-jy-aDJ"/>
                         <viewControllerLayoutGuide type="bottom" id="wfy-db-euE"/>
@@ -114,10 +96,12 @@
                             <constraint firstItem="pVI-ah-uy1" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="5Pc-aq-ffP"/>
                             <constraint firstItem="CAk-7d-L6h" firstAttribute="top" secondItem="Sjy-8G-VM5" secondAttribute="bottom" constant="8" id="88c-7f-7Dl"/>
                             <constraint firstItem="Sjy-8G-VM5" firstAttribute="trailing" secondItem="8bC-Xf-vdC" secondAttribute="trailingMargin" id="8tX-0Z-61X"/>
+                            <constraint firstItem="Ve1-rZ-oJj" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="i1d-gO-7ir" secondAttribute="trailing" constant="8" id="HTx-jI-JjK"/>
                             <constraint firstItem="Ve1-rZ-oJj" firstAttribute="top" secondItem="CAk-7d-L6h" secondAttribute="bottom" constant="8" id="HjW-Kx-D3h"/>
                             <constraint firstItem="8kb-Je-OtZ" firstAttribute="top" secondItem="Ve1-rZ-oJj" secondAttribute="bottom" constant="8" id="I2o-Xp-S3r"/>
                             <constraint firstItem="BRR-vu-nVg" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" constant="20" id="IVc-Oc-vB3"/>
                             <constraint firstItem="Y9D-94-1E7" firstAttribute="trailing" secondItem="8bC-Xf-vdC" secondAttribute="trailingMargin" id="JgH-t1-i1y"/>
+                            <constraint firstItem="CAk-7d-L6h" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="92K-KV-XjH" secondAttribute="trailing" constant="8" id="Q70-rh-l5c"/>
                             <constraint firstItem="i1d-gO-7ir" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="QP0-2a-wB2"/>
                             <constraint firstItem="tgl-Lo-6A8" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="Tw6-37-yy8"/>
                             <constraint firstItem="Sjy-8G-VM5" firstAttribute="top" secondItem="Y9D-94-1E7" secondAttribute="bottom" constant="8" id="UDy-6h-q4a"/>
@@ -127,10 +111,13 @@
                             <constraint firstItem="i1d-gO-7ir" firstAttribute="centerY" secondItem="Ve1-rZ-oJj" secondAttribute="centerY" id="gUx-9X-lVV"/>
                             <constraint firstItem="Y9D-94-1E7" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" constant="20" id="giq-00-3lQ"/>
                             <constraint firstItem="92K-KV-XjH" firstAttribute="centerY" secondItem="CAk-7d-L6h" secondAttribute="centerY" id="h6R-sH-rTH"/>
+                            <constraint firstItem="8kb-Je-OtZ" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="tgl-Lo-6A8" secondAttribute="trailing" constant="8" id="hiN-b3-VDX"/>
                             <constraint firstItem="x81-HN-35Z" firstAttribute="top" secondItem="tgl-Lo-6A8" secondAttribute="bottom" constant="8" id="iQ3-7a-kLf"/>
                             <constraint firstItem="Sjy-8G-VM5" firstAttribute="centerY" secondItem="pVI-ah-uy1" secondAttribute="centerY" id="mii-XC-WYs"/>
+                            <constraint firstItem="Y9D-94-1E7" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="BRR-vu-nVg" secondAttribute="trailing" constant="8" id="npU-cM-IIj"/>
                             <constraint firstItem="CAk-7d-L6h" firstAttribute="trailing" secondItem="8bC-Xf-vdC" secondAttribute="trailingMargin" id="pmb-Vl-aiL"/>
                             <constraint firstItem="92K-KV-XjH" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="sTI-Of-603"/>
+                            <constraint firstItem="Sjy-8G-VM5" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="pVI-ah-uy1" secondAttribute="trailing" constant="8" id="uXX-7h-hW4"/>
                             <constraint firstItem="8kb-Je-OtZ" firstAttribute="trailing" secondItem="8bC-Xf-vdC" secondAttribute="trailingMargin" id="xJ8-YC-FyE"/>
                         </constraints>
                     </view>

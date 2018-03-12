@@ -31,7 +31,7 @@ class MockRequest: OfflineRequest {
         self.dictionary = dictionary
     }
     
-    func dictionaryRepresentation() -> [String : Any]? {
+    var dictionaryRepresentation: [String : Any]? {
         return dictionary
     }
     

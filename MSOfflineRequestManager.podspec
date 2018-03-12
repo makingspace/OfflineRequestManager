@@ -1,23 +1,13 @@
-#
-# Be sure to run `pod lib lint MSOfflineRequestManager.podspec' to ensure this is a
-# valid spec before submitting.
-#
-# Any lines starting with a # are optional, but their use is encouraged
-# To learn more about a Podspec see http://guides.cocoapods.org/syntax/podspec.html
-#
-
 Pod::Spec.new do |s|
   s.name             = 'MSOfflineRequestManager'
-  s.version          = '0.5.0'
-  s.summary          = 'A framework for managing network requests to ensure that they are sent even if the device is online or the app closes'
-
-# This description is used to generate tags and improve search results.
-#   * Think: What does it do? Why did you write it? What is the focus?
-#   * Try to keep it short, snappy and to the point.
-#   * Write the description between the DESC delimiters below.
-#   * Finally, don't worry about the indent, CocoaPods strips it!
-
-  s.description      = 'A framework for managing network requests to ensure that they are sent even if the device is online or the app closes'
+  s.version          = '1.0.0'
+  s.summary          = 'Swift framework for ensuring that network requests are sent even if the device is offline or the app is terminated'
+  s.description      = <<-DESC
+                        MSOfflineRequestManager allows apps to enqueue network requests in the background regardless of current connectivity.
+                        Any requests must be represented by OfflineRequest. If they conform to the optional methods that allow them to be
+                        re-instantiated from a dictionary, then they will also be saved to disk to ensure that they are sent whenever the app
+                        comes back online.
+                       DESC
   s.ios.deployment_target = '9.0'
   s.homepage         = 'https://github.com/makingspace/MSOfflineRequestManager'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }

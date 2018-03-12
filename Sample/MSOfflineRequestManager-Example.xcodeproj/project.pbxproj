@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		51EAAA38AA82ADFC1A6BFD85 /* Pods_MSOfflineRequestManager_ExampleTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B539D3ACD410B7D36D4CFD41 /* Pods_MSOfflineRequestManager_ExampleTests.framework */; };
+		684E0B0C2056FC40005A16B6 /* MSOfflineRequestTestViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684E0B0B2056FC40005A16B6 /* MSOfflineRequestTestViewController.swift */; };
 		68EA09771E43BFB6002A1338 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68EA09761E43BFB6002A1338 /* AppDelegate.swift */; };
 		68EA097C1E43BFB6002A1338 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 68EA097A1E43BFB6002A1338 /* Main.storyboard */; };
 		68EA097E1E43BFB6002A1338 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 68EA097D1E43BFB6002A1338 /* Assets.xcassets */; };
@@ -28,6 +29,7 @@
 
 /* Begin PBXFileReference section */
 		478AA1A5BAA5E5FEACC8B611 /* Pods-MSOfflineRequestManager-Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MSOfflineRequestManager-Example.release.xcconfig"; path = "Pods/Target Support Files/Pods-MSOfflineRequestManager-Example/Pods-MSOfflineRequestManager-Example.release.xcconfig"; sourceTree = "<group>"; };
+		684E0B0B2056FC40005A16B6 /* MSOfflineRequestTestViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MSOfflineRequestTestViewController.swift; sourceTree = "<group>"; };
 		68EA09731E43BFB6002A1338 /* MSOfflineRequestManager-Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MSOfflineRequestManager-Example.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		68EA09761E43BFB6002A1338 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		68EA097B1E43BFB6002A1338 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -38,10 +40,6 @@
 		68EA09911E453952002A1338 /* MSOfflineRequestManager_ExampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MSOfflineRequestManager_ExampleTests.swift; sourceTree = "<group>"; };
 		68EA09931E453952002A1338 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		68EA09991E492EC5002A1338 /* MSOfflineRequestManager-Example-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MSOfflineRequestManager-Example-Bridging-Header.h"; sourceTree = "<group>"; };
-		68EA09A01E493210002A1338 /* MSTestRequest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MSTestRequest.h; sourceTree = "<group>"; };
-		68EA09A11E493210002A1338 /* MSTestRequest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MSTestRequest.m; sourceTree = "<group>"; };
-		68EA09AB1E4A5CA4002A1338 /* MSOfflineRequestTestViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MSOfflineRequestTestViewController.h; sourceTree = "<group>"; };
-		68EA09AC1E4A5CA4002A1338 /* MSOfflineRequestTestViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MSOfflineRequestTestViewController.m; sourceTree = "<group>"; };
 		B539D3ACD410B7D36D4CFD41 /* Pods_MSOfflineRequestManager_ExampleTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MSOfflineRequestManager_ExampleTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B841DE36A25022E0F70C1717 /* Pods-MSOfflineRequestManager-ExampleTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MSOfflineRequestManager-ExampleTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-MSOfflineRequestManager-ExampleTests/Pods-MSOfflineRequestManager-ExampleTests.release.xcconfig"; sourceTree = "<group>"; };
 		BF4D53E7A4800C9B3C9756EF /* Pods-MSOfflineRequestManager-ExampleTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MSOfflineRequestManager-ExampleTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-MSOfflineRequestManager-ExampleTests/Pods-MSOfflineRequestManager-ExampleTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -93,10 +91,7 @@
 			isa = PBXGroup;
 			children = (
 				68EA09761E43BFB6002A1338 /* AppDelegate.swift */,
-				68EA09AB1E4A5CA4002A1338 /* MSOfflineRequestTestViewController.h */,
-				68EA09AC1E4A5CA4002A1338 /* MSOfflineRequestTestViewController.m */,
-				68EA09A01E493210002A1338 /* MSTestRequest.h */,
-				68EA09A11E493210002A1338 /* MSTestRequest.m */,
+				684E0B0B2056FC40005A16B6 /* MSOfflineRequestTestViewController.swift */,
 				68EA097A1E43BFB6002A1338 /* Main.storyboard */,
 				68EA097D1E43BFB6002A1338 /* Assets.xcassets */,
 				68EA097F1E43BFB6002A1338 /* LaunchScreen.storyboard */,
@@ -360,6 +355,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				684E0B0C2056FC40005A16B6 /* MSOfflineRequestTestViewController.swift in Sources */,
 				68EA09771E43BFB6002A1338 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

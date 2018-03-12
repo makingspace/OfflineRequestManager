@@ -194,7 +194,7 @@ public class RequestAction: Equatable {
     }
 }
 
-public extension Array where Element: RequestAction {
+extension Array where Element: RequestAction {
     func action(forRequestID id: String?) -> RequestAction? {
         return first(where: { $0.id == id })
     }

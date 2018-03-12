@@ -60,7 +60,7 @@ class ClassThatHandlesNetworkRequests: OfflineRequestManagerDelegate {
 ```
 And finally:
 ```swift
-OfflineRequestManager.defaultManager(queueRequest: MoreRealisticRequest(requestData: currentlyRelevantData))
+OfflineRequestManager.defaultManager(queueRequest: MoreRealisticRequest(requestData: relevantData))
 ```
 
 It just works&trade;. There are several other optional delegate methods that update based on request progress and allow for more refined error handling if desired. Multiple OfflineRequestManager instances can also be used in parallel for different request types by using manager(withFileName:) instead of the default. A manager will by default send up to 10 queued requests at a time and give them 120 seconds to complete, but these numbers are configurable.

@@ -8,7 +8,7 @@ Pod::Spec.new do |s|
                         re-instantiated from a dictionary, then they will also be saved to disk to ensure that they are sent whenever the app
                         comes back online.
                        DESC
-  s.ios.deployment_target = '9.0'
+  s.ios.deployment_target = '10.0'
   s.homepage         = 'https://github.com/makingspace/MSOfflineRequestManager'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'pomalley' => 'pomalley@makespace.com' }

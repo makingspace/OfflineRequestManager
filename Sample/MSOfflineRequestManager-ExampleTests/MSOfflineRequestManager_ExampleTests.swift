@@ -389,8 +389,8 @@ class MSOfflineRequestManagerTests: QuickSpec {
                     listener.triggerBlock = { type in
                         switch type {
                         case .failed(_, let returnedError):
-                            expect((returnedError as NSError).code).to(equal(0))
-                            expect((returnedError as NSError).localizedDescription).to(equal("Offline Request Failed to Complete"))
+                            expect((returnedError as NSError).code).to(equal(-1))
+                            expect((returnedError as NSError).localizedDescription).to(equal("Offline Request Timed Out"))
                             done()
                         default:
                             break

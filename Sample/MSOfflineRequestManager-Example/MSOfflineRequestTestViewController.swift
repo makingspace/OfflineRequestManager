@@ -16,7 +16,7 @@ class MSOfflineRequestTestViewController: UIViewController {
     @IBOutlet weak var totalProgressLabel: UILabel!
     @IBOutlet weak var lastRequestLabel: UILabel!
     
-    private var requestsAllowed = true
+    fileprivate var requestsAllowed = true
     
     private var offlineRequestManager: OfflineRequestManager {
         return OfflineRequestManager.defaultManager

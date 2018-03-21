@@ -1,4 +1,4 @@
-OfflineRequestManager is Swift framework for ensuring that network requests are sent even if the device is offline or the app is terminated
+OfflineRequestManager is a Swift framework for ensuring that network requests are sent even if the device is offline or the app is terminated
 
 ## Usage
 
@@ -47,7 +47,7 @@ class MoreRealisticRequest: OfflineRequest {
     }
 }
 ```
-The data provided by dictionaryRepresentation will be written to disk using NSCoding to be retained until the request completes (Note: this means that only Foundation objects and objects that conform to NSCoding will be saved). In this case, there will need to be a delegate that lets the OfflineRequestManager know what exactly to do with the archived dictionary when the app starts back up, which should be something like:
+The data provided by dictionaryRepresentation will be written to disk using NSKeyedArchiver to be retained until the request completes (Note: Foundation objects will save by default, but custom objects in this dictionary must conform to NSCoding to be archived). In this case, there will need to be a delegate that lets the OfflineRequestManager know what exactly to do with the archived dictionary when the app starts back up:
 ```swift
 class ClassThatHandlesNetworkRequests: OfflineRequestManagerDelegate {
     init() {
@@ -65,7 +65,7 @@ And finally:
 OfflineRequestManager.defaultManager(queueRequest: MoreRealisticRequest(requestData: relevantData))
 ```
 
-It just works&trade;. There are several other optional delegate methods that update based on request progress and allow for more refined error handling if desired. Multiple OfflineRequestManager instances can also be used in parallel for different request types by using manager(withFileName:) instead of defaultManager. A manager will by default send up to 10 queued requests at a time and give them 120 seconds to complete, but these numbers are configurable.
+It just works&trade;. There are several other optional delegate methods that update based on request progress and allow for more refined error handling if desired. Multiple OfflineRequestManager instances can also be used in parallel for different request types by using manager(withFileName:) instead of defaultManager. A manager will by default send up to 10 queued requests at a time and give them 120 seconds to complete; both of these numbers are configurable.
 
 ## License
 

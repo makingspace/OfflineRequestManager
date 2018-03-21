@@ -194,7 +194,7 @@ public class RequestAction: Equatable {
     }
 }
 
-extension Array where Element: RequestAction {
+private extension Array where Element: RequestAction {
     func action(forRequestID id: String?) -> RequestAction? {
         return first(where: { $0.id == id })
     }
@@ -322,17 +322,23 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     /// instantiates the OfflineRequestManager already written to disk if possible; Exposed for testing
     static public func archivedManager(fileName: String = defaultFileName) -> OfflineRequestManager? {
-        guard let filePath = filePath(fileName: fileName), let archivedManager = NSKeyedUnarchiver.unarchiveObject(withFile: filePath) as? OfflineRequestManager else {
+        do {
+            guard let fileURL = fileURL(fileName: fileName),
+                let archivedManager = try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(Data(contentsOf: fileURL)) as? OfflineRequestManager else {
+                    return nil
+            }
+            
+            archivedManager.fileName = fileName
+            return archivedManager
+        }
+        catch {
             return nil
         }
-        
-        archivedManager.fileName = fileName
-        return archivedManager
     }
     
-    private static func filePath(fileName: String) -> String? {
+    private static func fileURL(fileName: String) -> URL? {
         do {
-            return try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false).appendingPathComponent(fileName).path
+            return try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false).appendingPathComponent(fileName)
         }
         catch {
             return nil
@@ -496,10 +502,9 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     /// Writes the OfflineReqeustManager instances to the Documents directory
     public func saveToDisk() {
-        if let path = OfflineRequestManager.filePath(fileName: fileName) {
-            pendingRequestDictionaries = pendingActions.filter { $0.request.dictionaryRepresentation != nil }.map { $0.request.dictionaryRepresentation! }
-            NSKeyedArchiver.archiveRootObject(self, toFile: path)
-        }
+        guard let path = OfflineRequestManager.fileURL(fileName: fileName)?.path else { return }
+        pendingRequestDictionaries = pendingActions.filter { $0.request.dictionaryRepresentation != nil }.map { $0.request.dictionaryRepresentation! }
+        NSKeyedArchiver.archiveRootObject(self, toFile: path)
     }
     
     fileprivate func updateProgress() {

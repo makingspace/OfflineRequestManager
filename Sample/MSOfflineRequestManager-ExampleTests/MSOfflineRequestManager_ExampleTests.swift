@@ -6,7 +6,7 @@
 //  Copyright © 2017 MakeSpace. All rights reserved.
 //
 
-@testable import MSOfflineRequestManager
+@testable import OfflineRequestManager
 import Alamofire
 import Quick
 import Nimble

@@ -246,12 +246,12 @@
 			inputPaths = (
 				"${SRCROOT}/Pods/Target Support Files/Pods-MSOfflineRequestManager-Example/Pods-MSOfflineRequestManager-Example-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/Alamofire/Alamofire.framework",
-				"${BUILT_PRODUCTS_DIR}/MSOfflineRequestManager/MSOfflineRequestManager.framework",
+				"${BUILT_PRODUCTS_DIR}/OfflineRequestManager/OfflineRequestManager.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Alamofire.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/MSOfflineRequestManager.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/OfflineRequestManager.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -266,14 +266,14 @@
 			inputPaths = (
 				"${SRCROOT}/Pods/Target Support Files/Pods-MSOfflineRequestManager-ExampleTests/Pods-MSOfflineRequestManager-ExampleTests-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/Alamofire/Alamofire.framework",
-				"${BUILT_PRODUCTS_DIR}/MSOfflineRequestManager/MSOfflineRequestManager.framework",
+				"${BUILT_PRODUCTS_DIR}/OfflineRequestManager/OfflineRequestManager.framework",
 				"${BUILT_PRODUCTS_DIR}/Nimble/Nimble.framework",
 				"${BUILT_PRODUCTS_DIR}/Quick/Quick.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Alamofire.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/MSOfflineRequestManager.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/OfflineRequestManager.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Nimble.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Quick.framework",
 			);
@@ -518,7 +518,6 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "MSOfflineRequestManager-Example/MSOfflineRequestManager-Example-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 4.0;
 			};
 			name = Debug;
 		};
@@ -534,7 +533,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.makespace.MSOfflineRequestManager-Example";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "MSOfflineRequestManager-Example/MSOfflineRequestManager-Example-Bridging-Header.h";
-				SWIFT_VERSION = 4.0;
 			};
 			name = Release;
 		};

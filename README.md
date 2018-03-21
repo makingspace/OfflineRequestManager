@@ -1,10 +1,12 @@
-MSOfflineRequestManager is Swift framework for ensuring that network requests are sent even if the device is offline or the app is terminated
+OfflineRequestManager is Swift framework for ensuring that network requests are sent even if the device is offline or the app is terminated
 
 ## Usage
 
-MSOfflineRequestManager works by enqueuing OfflineRequest objects wrapping the network request being performed and observering the current network reachability using Alamofire. If the app is already online, then it will be performed immediately. The simplest implementation would be something like this:
+OfflineRequestManager works by enqueuing OfflineRequest objects wrapping the network request being performed and observering the current network reachability using Alamofire. If the app is already online, then it will be performed immediately. The simplest implementation would be something like this:
 
 ```swift
+import OfflineRequestManager
+
 class SimpleRequest: OfflineRequest {
     func perform(completion: @escaping (Error?) -> Void) {
         doMyNetworkRequest(withCompletion: { error in
@@ -45,7 +47,7 @@ class MoreRealisticRequest: OfflineRequest {
     }
 }
 ```
-In this case, there will need to be a delegate that lets the OfflineRequestManager know what exactly to do with the archived dictionary when the app starts back up, which should be something like:
+The data provided by dictionaryRepresentation will be written to disk using NSCoding to be retained until the request completes (Note: this means that only Foundation objects and objects that conform to NSCoding will be saved). In this case, there will need to be a delegate that lets the OfflineRequestManager know what exactly to do with the archived dictionary when the app starts back up, which should be something like:
 ```swift
 class ClassThatHandlesNetworkRequests: OfflineRequestManagerDelegate {
     init() {
@@ -67,4 +69,4 @@ It just works&trade;. There are several other optional delegate methods that upd
 
 ## License
 
-MSOfflineRequestManager is released under the MIT license. [See LICENSE](https://github.com/makingspace/MSOfflineRequestManager/blob/master/LICENSE) for details.
+OfflineRequestManager is released under the MIT license. [See LICENSE](https://github.com/makingspace/OfflineRequestManager/blob/master/LICENSE) for details.

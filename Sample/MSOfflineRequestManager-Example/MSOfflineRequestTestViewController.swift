@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import MSOfflineRequestManager
+import OfflineRequestManager
 
 class MSOfflineRequestTestViewController: UIViewController {
     @IBOutlet weak var connectionStatusLabel: UILabel!

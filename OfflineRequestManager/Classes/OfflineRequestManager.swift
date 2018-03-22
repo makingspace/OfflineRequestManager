@@ -8,6 +8,7 @@
 
 import Foundation
 import Alamofire
+import ObjectiveC
 
 /// Protocol for objects that can be converted to and from Dictionaries
 public protocol DictionaryRepresentable {
@@ -36,11 +37,6 @@ public protocol OfflineRequest: DictionaryRepresentable {
     /// - Parameter completion: completion fired when done, either with an Error or nothing in the case of success
     func perform(completion: @escaping (Error?) -> Swift.Void)
     
-    /// Property declaration that must be provided so that the OfflineRequestManager can receive callbacks where appropriate
-    var requestDelegate: OfflineRequestDelegate? { get set }
-    /// Property declaration that must be provided so that the OfflineRequestManager can track the request
-    var requestID: String? { get set }
-    
     /// Allows the OfflineRequest object to recover from an error if desired; Only called if the error is not network related
     ///
     /// - Parameter error: Error associated with the failure, which should be equal to what was passed back in the perform(completion:) call
@@ -48,9 +44,41 @@ public protocol OfflineRequest: DictionaryRepresentable {
     func shouldAttemptResubmission(forError error: Error) -> Bool
 }
 
+private var requestIdKey: UInt8 = 0
+private var requestDelegateKey: UInt8 = 0
+
+private extension OfflineRequest {
+    var requestID: String? {
+        get { return objc_getAssociatedObject(self, &requestIdKey) as? String }
+        set { objc_setAssociatedObject(self, &requestIdKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
+    }
+    
+    var requestDelegate: OfflineRequestDelegate? {
+        get { return objc_getAssociatedObject(self, &requestDelegateKey) as? OfflineRequestDelegate }
+        set { objc_setAssociatedObject(self, &requestDelegateKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
+    }
+}
+
 public extension OfflineRequest {
     func shouldAttemptResubmission(forError error: Error) -> Bool {
         return false
+    }
+    
+    /// Prompts the OfflineRequestManager to save to disk; Used to persist any data changes over the course of a request if needed
+    func save() {
+        requestDelegate?.requestNeedsSave(self)
+    }
+    
+    /// Resets the timeout on the request; Useful for long requests that have multiple steps
+    func sendHeartbeat() {
+        requestDelegate?.requestSentHeartbeat(self)
+    }
+    
+    /// Provides the current progress (0 to 1) on the ongoing request
+    ///
+    /// - Parameter progress: current request progress
+    func update(toProgress progress: Double) {
+        requestDelegate?.request(self, didUpdateTo: progress)
     }
 }
 
@@ -155,7 +183,7 @@ public extension OfflineRequestManagerDelegate {
 }
 
 /// Protocol that OfflineRequestManager conforms to to listen for callbacks from the currently processing OfflineRequest object
-public protocol OfflineRequestDelegate {
+private protocol OfflineRequestDelegate {
     
     /// Callback indicating the OfflineRequest's current progress
     ///

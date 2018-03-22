@@ -79,9 +79,6 @@ class MSTestRequest: NSObject, OfflineRequest {
     
     var completion: ((Error?) -> Void)?
     
-    var requestDelegate: OfflineRequestDelegate?
-    var requestID: String?
-    
     static var testCount = 1
     let identifier: Int
     
@@ -127,6 +124,6 @@ extension MSTestRequest: URLSessionDownloadDelegate {
     }
     
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-        requestDelegate?.request(self, didUpdateTo: Double(totalBytesWritten) / Double(totalBytesExpectedToWrite))
+        update(toProgress: Double(totalBytesWritten) / Double(totalBytesExpectedToWrite))
     }
 }

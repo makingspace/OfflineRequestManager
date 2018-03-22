@@ -24,9 +24,6 @@ class MockRequest: OfflineRequest {
     var shouldFixError = false
     var stalled = false
     
-    var requestDelegate: OfflineRequestDelegate?
-    var requestID: String?
-    
     required init?(dictionary: [String : Any]) {
         self.dictionary = dictionary
     }
@@ -41,7 +38,7 @@ class MockRequest: OfflineRequest {
         Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
             self.currentProgress += MockRequest.progressIncrement
             
-            self.requestDelegate?.request(self, didUpdateTo: self.currentProgress)
+            self.update(toProgress: self.currentProgress)
             
             if self.currentProgress >= 1 {
                 timer.invalidate()
@@ -145,7 +142,7 @@ class MSOfflineRequestManagerTests: QuickSpec {
                 
                 expect(request.dictionary["test"]).to(beNil())
                 request.dictionary["test"] = "value"
-                request.requestDelegate?.requestNeedsSave(request)
+                request.save()
                 
                 archivedManager = OfflineRequestManager.archivedManager(fileName: testFileName)
                 

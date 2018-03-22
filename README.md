@@ -65,7 +65,7 @@ And finally:
 OfflineRequestManager.defaultManager(queueRequest: MoreRealisticRequest(requestData: relevantData))
 ```
 
-It just works&trade;. There are several other optional delegate methods that update based on request progress and allow for more refined error handling if desired. Multiple OfflineRequestManager instances can also be used in parallel for different request types by using manager(withFileName:) instead of defaultManager. A manager will by default send up to 10 queued requests at a time and give them 120 seconds to complete; both of these numbers are configurable.
+It just works&trade;. Other types of requests can either be handled by the same delegate or enqueued with entirely different OfflineRequestManager instances by using manager(withFileName:) instead of defaultManager. There are several other optional delegate methods that update based on request progress and allow for more refined error handling if desired. By default, the manager will send up to 10 queued requests at a time and give them 120 seconds to complete; both of these numbers are configurable.
 
 ## License
 

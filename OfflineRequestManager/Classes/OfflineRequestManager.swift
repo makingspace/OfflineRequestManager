@@ -315,7 +315,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     required convenience public init?(coder aDecoder: NSCoder) {
         guard let requestDicts = aDecoder.decodeObject(forKey: "pendingRequestDictionaries") as? [[String: Any]] else {
-            print ("No Manager")
+            print ("Error Decoding Offline Request Dictionaries")
             return nil
         }
         

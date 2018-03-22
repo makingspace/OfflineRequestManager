@@ -1,5 +1,4 @@
-OfflineRequestManager is a Swift framework for ensuring that network requests are sent even if the device is offline or the app is terminated
-
+OfflineRequestManager is a Swift framework for ensuring that network requests are sent even if the device is offline or the app is terminated.
 ## Usage
 
 OfflineRequestManager works by enqueuing OfflineRequest objects wrapping the network request being performed and observering the current network reachability using Alamofire. If the app is already online, then it will be performed immediately. The simplest implementation would be something like this:
@@ -66,6 +65,14 @@ OfflineRequestManager.defaultManager(queueRequest: MoreRealisticRequest(requestD
 ```
 
 It just works&trade;. Other types of requests can either be handled by the same delegate or enqueued with entirely different OfflineRequestManager instances by using manager(withFileName:) instead of defaultManager. There are several other optional delegate methods that update based on request progress and allow for more refined error handling if desired. By default, the manager will send up to 10 queued requests at a time and give them 120 seconds to complete; both of these numbers are configurable.
+
+## Documentation
+
+For detailed documentation, please refer to the comments on the interfaces listed in the [OfflineRequestManager.swift file](https://github.com/makingspace/OfflineRequestManager/blob/master/OfflineRequestManager/Classes/OfflineRequestManager.swift)
+
+## Example
+
+For more descriptive example usage, please refer to the [sample project](https://github.com/makingspace/OfflineRequestManager/tree/master/Sample), which includes a simple demonstration of an image upload request and a test suite validating all of the available interfaces.
 
 ## License
 

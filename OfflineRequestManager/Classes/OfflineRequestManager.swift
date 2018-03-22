@@ -517,7 +517,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     /// Writes the OfflineRequestManager instances to the Documents directory
     public func saveToDisk() {
         guard let path = OfflineRequestManager.fileURL(fileName: fileName)?.path else { return }
-        pendingRequestDictionaries = pendingActions.filter { $0.request.dictionaryRepresentation != nil }.map { $0.request.dictionaryRepresentation! }
+        pendingRequestDictionaries = pendingActions.flatMap { $0.request.dictionaryRepresentation }
         NSKeyedArchiver.archiveRootObject(self, toFile: path)
     }
     

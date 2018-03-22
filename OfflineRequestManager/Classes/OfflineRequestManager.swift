@@ -510,11 +510,8 @@ public class OfflineRequestManager: NSObject, NSCoding {
     public func queueRequests(_ requests: [OfflineRequest]) {
         addRequests(requests)
         
-        for request in requests {
-            if request.dictionaryRepresentation != nil {
-                saveToDisk()
-                break
-            }
+        if requests.contains(where: { $0.dictionaryRepresentation != nil}) {
+            saveToDisk()
         }
         
         attemptSubmission()

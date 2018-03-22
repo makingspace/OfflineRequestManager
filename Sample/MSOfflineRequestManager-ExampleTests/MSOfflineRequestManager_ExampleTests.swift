@@ -38,7 +38,7 @@ class MockRequest: OfflineRequest {
         Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
             self.currentProgress += MockRequest.progressIncrement
             
-            self.update(toProgress: self.currentProgress)
+            self.updateProgress(to: self.currentProgress)
             
             if self.currentProgress >= 1 {
                 timer.invalidate()

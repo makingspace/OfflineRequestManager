@@ -124,6 +124,6 @@ extension MSTestRequest: URLSessionDownloadDelegate {
     }
     
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-        update(toProgress: Double(totalBytesWritten) / Double(totalBytesExpectedToWrite))
+        updateProgress(to: Double(totalBytesWritten) / Double(totalBytesExpectedToWrite))
     }
 }

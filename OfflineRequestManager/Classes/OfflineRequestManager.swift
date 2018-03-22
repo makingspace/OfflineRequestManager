@@ -77,7 +77,7 @@ public extension OfflineRequest {
     /// Provides the current progress (0 to 1) on the ongoing request
     ///
     /// - Parameter progress: current request progress
-    func update(toProgress progress: Double) {
+    func updateProgress(to progress: Double) {
         requestDelegate?.request(self, didUpdateTo: progress)
     }
 }

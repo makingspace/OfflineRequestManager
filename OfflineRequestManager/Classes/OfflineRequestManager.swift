@@ -240,14 +240,8 @@ public class OfflineRequestManager: NSObject, NSCoding {
     /// written to disk when recovering from app termination
     public var delegate: OfflineRequestManagerDelegate? {
         didSet {
-            if let delegate = delegate, pendingActions.count == 0, pendingRequestDictionaries.count > 0 {
-                var requests = [OfflineRequest]()
-                
-                for dict in pendingRequestDictionaries {
-                    if let request = delegate.offlineRequest(withDictionary: dict) {
-                        requests.append(request)
-                    }
-                }
+            if let delegate = delegate, pendingActions.count == 0 {
+                let requests = pendingRequestDictionaries.flatMap { delegate.offlineRequest(withDictionary: $0) }
                 
                 if requests.count > 0 {
                     addRequests(requests)
@@ -337,9 +331,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     /// Generates a OfflineRequestManager instance tied to a file name in the Documents directory; creates a new object or pulls up the object written to disk if possible
     static public func manager(withFileName fileName: String) -> OfflineRequestManager {
         guard let manager = managers[fileName] else {
-            
             let manager = archivedManager(fileName: fileName) ?? OfflineRequestManager()
-            
             manager.fileName = fileName
             managers[fileName] = manager
             return manager

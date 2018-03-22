@@ -359,18 +359,14 @@ public class OfflineRequestManager: NSObject, NSCoding {
             archivedManager.fileName = fileName
             return archivedManager
         }
-        catch {
-            return nil
-        }
+        catch { return nil }
     }
     
     private static func fileURL(fileName: String) -> URL? {
         do {
             return try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false).appendingPathComponent(fileName)
         }
-        catch {
-            return nil
-        }
+        catch { return nil }
     }
     
     private func setup() {
@@ -399,8 +395,9 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     /// attempts to perform the next OfflineRequest action in the queue
     @objc open func attemptSubmission() {
-        let ongoingActionIDs = ongoingActions.map { $0.id }
-        guard let action = pendingActions.first(where: { !ongoingActionIDs.contains($0.id) }), ongoingActions.count < simultaneousRequestCap && shouldAttemptRequest(action.request) else { return }
+        guard let action = pendingActions.first(where: { !ongoingActions.contains($0) }),
+            ongoingActions.count < simultaneousRequestCap,
+            shouldAttemptRequest(action.request) else { return }
         
         registerBackgroundTask()
         

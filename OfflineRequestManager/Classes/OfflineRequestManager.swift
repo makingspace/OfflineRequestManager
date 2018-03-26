@@ -8,6 +8,7 @@
 
 import Foundation
 import Alamofire
+import ObjectiveC
 
 /// Protocol for objects that can be converted to and from Dictionaries
 public protocol DictionaryRepresentable {
@@ -36,11 +37,6 @@ public protocol OfflineRequest: DictionaryRepresentable {
     /// - Parameter completion: completion fired when done, either with an Error or nothing in the case of success
     func perform(completion: @escaping (Error?) -> Swift.Void)
     
-    /// Property declaration that must be provided so that the OfflineRequestManager can receive callbacks where appropriate
-    var requestDelegate: OfflineRequestDelegate? { get set }
-    /// Property declaration that must be provided so that the OfflineRequestManager can track the request
-    var requestID: String? { get set }
-    
     /// Allows the OfflineRequest object to recover from an error if desired; Only called if the error is not network related
     ///
     /// - Parameter error: Error associated with the failure, which should be equal to what was passed back in the perform(completion:) call
@@ -48,9 +44,41 @@ public protocol OfflineRequest: DictionaryRepresentable {
     func shouldAttemptResubmission(forError error: Error) -> Bool
 }
 
+private var requestIdKey: UInt8 = 0
+private var requestDelegateKey: UInt8 = 0
+
+private extension OfflineRequest {
+    var requestID: String? {
+        get { return objc_getAssociatedObject(self, &requestIdKey) as? String }
+        set { objc_setAssociatedObject(self, &requestIdKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
+    }
+    
+    var requestDelegate: OfflineRequestDelegate? {
+        get { return objc_getAssociatedObject(self, &requestDelegateKey) as? OfflineRequestDelegate }
+        set { objc_setAssociatedObject(self, &requestDelegateKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
+    }
+}
+
 public extension OfflineRequest {
     func shouldAttemptResubmission(forError error: Error) -> Bool {
         return false
+    }
+    
+    /// Prompts the OfflineRequestManager to save to disk; Used to persist any data changes over the course of a request if needed
+    func save() {
+        requestDelegate?.requestNeedsSave(self)
+    }
+    
+    /// Resets the timeout on the request; Useful for long requests that have multiple steps
+    func sendHeartbeat() {
+        requestDelegate?.requestSentHeartbeat(self)
+    }
+    
+    /// Provides the current progress (0 to 1) on the ongoing request
+    ///
+    /// - Parameter progress: current request progress
+    func updateProgress(to progress: Double) {
+        requestDelegate?.request(self, didUpdateTo: progress)
     }
 }
 
@@ -155,7 +183,7 @@ public extension OfflineRequestManagerDelegate {
 }
 
 /// Protocol that OfflineRequestManager conforms to to listen for callbacks from the currently processing OfflineRequest object
-public protocol OfflineRequestDelegate {
+private protocol OfflineRequestDelegate {
     
     /// Callback indicating the OfflineRequest's current progress
     ///
@@ -194,7 +222,7 @@ public class RequestAction: Equatable {
     }
 }
 
-public extension Array where Element: RequestAction {
+private extension Array where Element: RequestAction {
     func action(forRequestID id: String?) -> RequestAction? {
         return first(where: { $0.id == id })
     }
@@ -212,14 +240,8 @@ public class OfflineRequestManager: NSObject, NSCoding {
     /// written to disk when recovering from app termination
     public var delegate: OfflineRequestManagerDelegate? {
         didSet {
-            if let delegate = delegate, pendingActions.count == 0, pendingRequestDictionaries.count > 0 {
-                var requests = [OfflineRequest]()
-                
-                for dict in pendingRequestDictionaries {
-                    if let request = delegate.offlineRequest(withDictionary: dict) {
-                        requests.append(request)
-                    }
-                }
+            if let delegate = delegate, pendingActions.count == 0 {
+                let requests = pendingRequestDictionaries.flatMap { delegate.offlineRequest(withDictionary: $0) }
                 
                 if requests.count > 0 {
                     addRequests(requests)
@@ -287,7 +309,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     required convenience public init?(coder aDecoder: NSCoder) {
         guard let requestDicts = aDecoder.decodeObject(forKey: "pendingRequestDictionaries") as? [[String: Any]] else {
-            print ("No Manager")
+            print ("Error Decoding Offline Request Dictionaries")
             return nil
         }
         
@@ -309,9 +331,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     /// Generates a OfflineRequestManager instance tied to a file name in the Documents directory; creates a new object or pulls up the object written to disk if possible
     static public func manager(withFileName fileName: String) -> OfflineRequestManager {
         guard let manager = managers[fileName] else {
-            
             let manager = archivedManager(fileName: fileName) ?? OfflineRequestManager()
-            
             manager.fileName = fileName
             managers[fileName] = manager
             return manager
@@ -322,21 +342,23 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     /// instantiates the OfflineRequestManager already written to disk if possible; Exposed for testing
     static public func archivedManager(fileName: String = defaultFileName) -> OfflineRequestManager? {
-        guard let filePath = filePath(fileName: fileName), let archivedManager = NSKeyedUnarchiver.unarchiveObject(withFile: filePath) as? OfflineRequestManager else {
-            return nil
+        do {
+            guard let fileURL = fileURL(fileName: fileName),
+                let archivedManager = try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(Data(contentsOf: fileURL)) as? OfflineRequestManager else {
+                    return nil
+            }
+            
+            archivedManager.fileName = fileName
+            return archivedManager
         }
-        
-        archivedManager.fileName = fileName
-        return archivedManager
+        catch { return nil }
     }
     
-    private static func filePath(fileName: String) -> String? {
+    private static func fileURL(fileName: String) -> URL? {
         do {
-            return try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false).appendingPathComponent(fileName).path
+            return try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false).appendingPathComponent(fileName)
         }
-        catch {
-            return nil
-        }
+        catch { return nil }
     }
     
     private func setup() {
@@ -365,8 +387,9 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     /// attempts to perform the next OfflineRequest action in the queue
     @objc open func attemptSubmission() {
-        let ongoingActionIDs = ongoingActions.map { $0.id }
-        guard let action = pendingActions.first(where: { !ongoingActionIDs.contains($0.id) }), ongoingActions.count < simultaneousRequestCap && shouldAttemptRequest(action.request) else { return }
+        guard let action = pendingActions.first(where: { !ongoingActions.contains($0) }),
+            ongoingActions.count < simultaneousRequestCap,
+            shouldAttemptRequest(action.request) else { return }
         
         registerBackgroundTask()
         
@@ -406,7 +429,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     @objc func killRequest(_ requestID: String?) {
         guard let action = ongoingActions.action(forRequestID: requestID) else { return }
         ongoingActions.removeAction(action)
-        completeAction(action, error: NSError.genericError)
+        completeAction(action, error: NSError.timeOutError)
     }
     
     private func completeAction(_ action: RequestAction, error: Error?) {
@@ -479,11 +502,8 @@ public class OfflineRequestManager: NSObject, NSCoding {
     public func queueRequests(_ requests: [OfflineRequest]) {
         addRequests(requests)
         
-        for request in requests {
-            if request.dictionaryRepresentation != nil {
-                saveToDisk()
-                break
-            }
+        if requests.contains(where: { $0.dictionaryRepresentation != nil}) {
+            saveToDisk()
         }
         
         attemptSubmission()
@@ -494,12 +514,11 @@ public class OfflineRequestManager: NSObject, NSCoding {
         totalRequestCount = pendingActions.count + completedRequestCount
     }
     
-    /// Writes the OfflineReqeustManager instances to the Documents directory
+    /// Writes the OfflineRequestManager instances to the Documents directory
     public func saveToDisk() {
-        if let path = OfflineRequestManager.filePath(fileName: fileName) {
-            pendingRequestDictionaries = pendingActions.filter { $0.request.dictionaryRepresentation != nil }.map { $0.request.dictionaryRepresentation! }
-            NSKeyedArchiver.archiveRootObject(self, toFile: path)
-        }
+        guard let path = OfflineRequestManager.fileURL(fileName: fileName)?.path else { return }
+        pendingRequestDictionaries = pendingActions.flatMap { $0.request.dictionaryRepresentation }
+        NSKeyedArchiver.archiveRootObject(self, toFile: path)
     }
     
     fileprivate func updateProgress() {
@@ -542,7 +561,7 @@ private extension NSError {
         }
     }
     
-    static var genericError: NSError {
-        return NSError(domain: "com.makespace.OfflineRequestManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "Offline Request Failed to Complete"])
+    static var timeOutError: NSError {
+        return NSError(domain: "com.makespace.offlineRequestManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Offline Request Timed Out"])
     }
 }

@@ -6,7 +6,7 @@
 //  Copyright © 2017 MakeSpace. All rights reserved.
 //
 
-@testable import MSOfflineRequestManager
+@testable import OfflineRequestManager
 import Alamofire
 import Quick
 import Nimble
@@ -24,14 +24,11 @@ class MockRequest: OfflineRequest {
     var shouldFixError = false
     var stalled = false
     
-    var requestDelegate: OfflineRequestDelegate?
-    var requestID: String?
-    
     required init?(dictionary: [String : Any]) {
         self.dictionary = dictionary
     }
     
-    func dictionaryRepresentation() -> [String : Any]? {
+    var dictionaryRepresentation: [String : Any]? {
         return dictionary
     }
     
@@ -41,7 +38,7 @@ class MockRequest: OfflineRequest {
         Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
             self.currentProgress += MockRequest.progressIncrement
             
-            self.requestDelegate?.request(self, didUpdateTo: self.currentProgress)
+            self.updateProgress(to: self.currentProgress)
             
             if self.currentProgress >= 1 {
                 timer.invalidate()
@@ -145,7 +142,7 @@ class MSOfflineRequestManagerTests: QuickSpec {
                 
                 expect(request.dictionary["test"]).to(beNil())
                 request.dictionary["test"] = "value"
-                request.requestDelegate?.requestNeedsSave(request)
+                request.save()
                 
                 archivedManager = OfflineRequestManager.archivedManager(fileName: testFileName)
                 
@@ -389,8 +386,8 @@ class MSOfflineRequestManagerTests: QuickSpec {
                     listener.triggerBlock = { type in
                         switch type {
                         case .failed(_, let returnedError):
-                            expect((returnedError as NSError).code).to(equal(0))
-                            expect((returnedError as NSError).localizedDescription).to(equal("Offline Request Failed to Complete"))
+                            expect((returnedError as NSError).code).to(equal(-1))
+                            expect((returnedError as NSError).localizedDescription).to(equal("Offline Request Timed Out"))
                             done()
                         default:
                             break

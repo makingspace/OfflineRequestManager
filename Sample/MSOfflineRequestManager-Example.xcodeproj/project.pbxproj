@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		51EAAA38AA82ADFC1A6BFD85 /* Pods_MSOfflineRequestManager_ExampleTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B539D3ACD410B7D36D4CFD41 /* Pods_MSOfflineRequestManager_ExampleTests.framework */; };
+		684E0B0C2056FC40005A16B6 /* MSOfflineRequestTestViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684E0B0B2056FC40005A16B6 /* MSOfflineRequestTestViewController.swift */; };
 		68EA09771E43BFB6002A1338 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68EA09761E43BFB6002A1338 /* AppDelegate.swift */; };
 		68EA097C1E43BFB6002A1338 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 68EA097A1E43BFB6002A1338 /* Main.storyboard */; };
 		68EA097E1E43BFB6002A1338 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 68EA097D1E43BFB6002A1338 /* Assets.xcassets */; };
@@ -28,6 +29,7 @@
 
 /* Begin PBXFileReference section */
 		478AA1A5BAA5E5FEACC8B611 /* Pods-MSOfflineRequestManager-Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MSOfflineRequestManager-Example.release.xcconfig"; path = "Pods/Target Support Files/Pods-MSOfflineRequestManager-Example/Pods-MSOfflineRequestManager-Example.release.xcconfig"; sourceTree = "<group>"; };
+		684E0B0B2056FC40005A16B6 /* MSOfflineRequestTestViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MSOfflineRequestTestViewController.swift; sourceTree = "<group>"; };
 		68EA09731E43BFB6002A1338 /* MSOfflineRequestManager-Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MSOfflineRequestManager-Example.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		68EA09761E43BFB6002A1338 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		68EA097B1E43BFB6002A1338 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -38,10 +40,6 @@
 		68EA09911E453952002A1338 /* MSOfflineRequestManager_ExampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MSOfflineRequestManager_ExampleTests.swift; sourceTree = "<group>"; };
 		68EA09931E453952002A1338 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		68EA09991E492EC5002A1338 /* MSOfflineRequestManager-Example-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MSOfflineRequestManager-Example-Bridging-Header.h"; sourceTree = "<group>"; };
-		68EA09A01E493210002A1338 /* MSTestRequest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MSTestRequest.h; sourceTree = "<group>"; };
-		68EA09A11E493210002A1338 /* MSTestRequest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MSTestRequest.m; sourceTree = "<group>"; };
-		68EA09AB1E4A5CA4002A1338 /* MSOfflineRequestTestViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MSOfflineRequestTestViewController.h; sourceTree = "<group>"; };
-		68EA09AC1E4A5CA4002A1338 /* MSOfflineRequestTestViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MSOfflineRequestTestViewController.m; sourceTree = "<group>"; };
 		B539D3ACD410B7D36D4CFD41 /* Pods_MSOfflineRequestManager_ExampleTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MSOfflineRequestManager_ExampleTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B841DE36A25022E0F70C1717 /* Pods-MSOfflineRequestManager-ExampleTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MSOfflineRequestManager-ExampleTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-MSOfflineRequestManager-ExampleTests/Pods-MSOfflineRequestManager-ExampleTests.release.xcconfig"; sourceTree = "<group>"; };
 		BF4D53E7A4800C9B3C9756EF /* Pods-MSOfflineRequestManager-ExampleTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MSOfflineRequestManager-ExampleTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-MSOfflineRequestManager-ExampleTests/Pods-MSOfflineRequestManager-ExampleTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -93,10 +91,7 @@
 			isa = PBXGroup;
 			children = (
 				68EA09761E43BFB6002A1338 /* AppDelegate.swift */,
-				68EA09AB1E4A5CA4002A1338 /* MSOfflineRequestTestViewController.h */,
-				68EA09AC1E4A5CA4002A1338 /* MSOfflineRequestTestViewController.m */,
-				68EA09A01E493210002A1338 /* MSTestRequest.h */,
-				68EA09A11E493210002A1338 /* MSTestRequest.m */,
+				684E0B0B2056FC40005A16B6 /* MSOfflineRequestTestViewController.swift */,
 				68EA097A1E43BFB6002A1338 /* Main.storyboard */,
 				68EA097D1E43BFB6002A1338 /* Assets.xcassets */,
 				68EA097F1E43BFB6002A1338 /* LaunchScreen.storyboard */,
@@ -186,7 +181,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0820;
-				LastUpgradeCheck = 0820;
+				LastUpgradeCheck = 0920;
 				ORGANIZATIONNAME = MakeSpace;
 				TargetAttributes = {
 					68EA09721E43BFB6002A1338 = {
@@ -251,12 +246,12 @@
 			inputPaths = (
 				"${SRCROOT}/Pods/Target Support Files/Pods-MSOfflineRequestManager-Example/Pods-MSOfflineRequestManager-Example-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/Alamofire/Alamofire.framework",
-				"${BUILT_PRODUCTS_DIR}/MSOfflineRequestManager/MSOfflineRequestManager.framework",
+				"${BUILT_PRODUCTS_DIR}/OfflineRequestManager/OfflineRequestManager.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Alamofire.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/MSOfflineRequestManager.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/OfflineRequestManager.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -271,14 +266,14 @@
 			inputPaths = (
 				"${SRCROOT}/Pods/Target Support Files/Pods-MSOfflineRequestManager-ExampleTests/Pods-MSOfflineRequestManager-ExampleTests-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/Alamofire/Alamofire.framework",
-				"${BUILT_PRODUCTS_DIR}/MSOfflineRequestManager/MSOfflineRequestManager.framework",
+				"${BUILT_PRODUCTS_DIR}/OfflineRequestManager/OfflineRequestManager.framework",
 				"${BUILT_PRODUCTS_DIR}/Nimble/Nimble.framework",
 				"${BUILT_PRODUCTS_DIR}/Quick/Quick.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Alamofire.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/MSOfflineRequestManager.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/OfflineRequestManager.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Nimble.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Quick.framework",
 			);
@@ -360,6 +355,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				684E0B0C2056FC40005A16B6 /* MSOfflineRequestTestViewController.swift in Sources */,
 				68EA09771E43BFB6002A1338 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -411,7 +407,9 @@
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
@@ -419,7 +417,11 @@
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
@@ -442,7 +444,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -462,7 +464,9 @@
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
@@ -470,7 +474,11 @@
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
@@ -487,7 +495,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
@@ -510,7 +518,6 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "MSOfflineRequestManager-Example/MSOfflineRequestManager-Example-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 4.0;
 			};
 			name = Debug;
 		};
@@ -526,7 +533,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.makespace.MSOfflineRequestManager-Example";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "MSOfflineRequestManager-Example/MSOfflineRequestManager-Example-Bridging-Header.h";
-				SWIFT_VERSION = 4.0;
 			};
 			name = Release;
 		};

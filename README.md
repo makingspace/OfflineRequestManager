@@ -41,7 +41,7 @@ class MoreRealisticRequest: OfflineRequest {
     }
     
     func perform(completion: @escaping (Error?) -> Void) {
-        doMyNetworkRequest(withData: requestData andCompletion: { response, error in
+        doMyNetworkRequest(withData: requestData, andCompletion: { response, error in
             handleResponse(response)
             completion(error)
         })

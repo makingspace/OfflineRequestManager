@@ -8,7 +8,8 @@ import OfflineRequestManager
 
 class SimpleRequest: OfflineRequest {
     func perform(completion: @escaping (Error?) -> Void) {
-        doMyNetworkRequest(withCompletion: { error in
+        doMyNetworkRequest(withCompletion: { response, error in
+            handleResponse(response)
             completion(error)
         })
     }
@@ -40,7 +41,8 @@ class MoreRealisticRequest: OfflineRequest {
     }
     
     func perform(completion: @escaping (Error?) -> Void) {
-        doMyNetworkRequest(withData: requestData andCompletion: { error in
+        doMyNetworkRequest(withData: requestData andCompletion: { response, error in
+            handleResponse(response)
             completion(error)
         })
     }
@@ -64,7 +66,7 @@ And finally:
 OfflineRequestManager.defaultManager(queueRequest: MoreRealisticRequest(requestData: relevantData))
 ```
 
-It just works&trade;. Other types of requests can either be handled by the same delegate or enqueued with entirely different OfflineRequestManager instances by using manager(withFileName:) instead of defaultManager. There are several other optional delegate methods that update based on request progress and allow for more refined error handling if desired. By default, the manager will send up to 10 queued requests at a time and give them 120 seconds to complete; both of these numbers are configurable.
+It just works&trade;. Other types of requests can either be handled by the same delegate or enqueued with entirely different OfflineRequestManager instances by using manager(withFileName:) instead of defaultManager. There are several other optional delegate methods that update based on request progress and allow for more refined error handling if desired. By default, the manager will send up to 10 queued requests at a time and give them 120 seconds to complete; both of these numbers are configurable (e.g. limit to 1 simultaneous request to ensure that they are sent in series).
 
 ## Documentation
 

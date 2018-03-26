@@ -20,28 +20,34 @@ Followed by:
 OfflineRequestManager.defaultManager(queueRequest: SimpleRequest())
 ```
 
-That's it! Realistically, there will likely be some data associated with the request. You also may want to be sure that the request is sent up even if the app is quit or (heaven forbid!) crashes. For these scenarios, the code will look something like:
+That's it! If a network-related error is passed into the completion block, then the OfflineRequestManager will retain the request and try again later. Other errors will by default remove the request from the queue, but there are optional delegate methods to allow for adjustment and resubmission if needed.
+
+Realistically, there will likely be some data associated with the request. You also may want to be sure that the request is sent up even if the app is quit or (heaven forbid!) crashes. For these scenarios, the code will look something like:
 
 ```swift
 class MoreRealisticRequest: OfflineRequest {
-    let requestData: [String: Any]
+    //arbitrary sample properties to demonstrate data persistence; could be replaced with anything
+    let stringProperty: String
+    let intProperty: Int
     
-    init(requestData: [String: Any]) {
-        self.requestData = requestData
-    }
-    
-    //provides OfflineRequestManager with a dictionary to save in the Documents directory
-    var dictionaryRepresentation: [String : Any]? {
-        return requestData
+    init(string: String, int: Int) {
+        self.stringProperty = string
+        self.intProperty = int
     }
     
     //instantiates the OfflineRequest from the saved dictionary
     required init?(dictionary: [String: Any]) {
-        self.init(requestData: dictionary)
+        guard let stringProperty = dictionary["property1"] as? String, let intProperty = dictionary["property2"] as? Int else { return nil }
+        self.init(string: stringProperty, int: intProperty)
+    }
+    
+    //provides OfflineRequestManager with a dictionary to save in the Documents directory
+    var dictionaryRepresentation: [String : Any]? {
+        return ["property1": stringProperty, "property2": intProperty]
     }
     
     func perform(completion: @escaping (Error?) -> Void) {
-        doMyNetworkRequest(withData: requestData, andCompletion: { response, error in
+        doMyNetworkRequest(withString: stringProperty, int: intProperty, andCompletion: { response, error in
             handleResponse(response)
             completion(error)
         })

@@ -236,17 +236,30 @@ private extension Array where Element: RequestAction {
 // Class for handling outstanding network requests; all data is written to disk in the case of app termination
 public class OfflineRequestManager: NSObject, NSCoding {
     
-    /// Object listening to all callbacks from the OfflineRequestManager. Optional for strictly in-memory use, but must be set in order to make use of dictionaries 
-    /// written to disk when recovering from app termination
+    /// Object listening to all callbacks from the OfflineRequestManager.  Must implement either delegate or requestInstantiationBlock to send archived requests
+    /// when recovering from app termination
     public var delegate: OfflineRequestManagerDelegate? {
         didSet {
-            if let delegate = delegate, pendingActions.count == 0 {
-                let requests = pendingRequestDictionaries.flatMap { delegate.offlineRequest(withDictionary: $0) }
-                
-                if requests.count > 0 {
-                    addRequests(requests)
-                }
+            if let delegate = delegate {
+                instantiateInitialRequests { delegate.offlineRequest(withDictionary: $0) }
             }
+        }
+    }
+    
+    /// Alternative means that allows instantiation of OfflineRequest objects from the dictionaries saved to disk without requiring a dedicated delegate
+    public var requestInstantiationBlock: (([String: Any]) -> OfflineRequest?)? {
+        didSet {
+            if let block = requestInstantiationBlock {
+                instantiateInitialRequests(withBlock: block)
+            }
+        }
+    }
+    
+    private func instantiateInitialRequests(withBlock block: (([String: Any]) -> OfflineRequest?)) {
+        guard pendingActions.count == 0 else { return }
+        let requests = pendingRequestDictionaries.flatMap { block($0) }
+        if requests.count > 0 {
+            addRequests(requests)
         }
     }
     

@@ -257,7 +257,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     private func instantiateInitialRequests(withBlock block: (([String: Any]) -> OfflineRequest?)) {
         guard pendingActions.count == 0 else { return }
-        let requests = pendingRequestDictionaries.flatMap { block($0) }
+        let requests = pendingRequestDictionaries.compactMap { block($0) }
         if requests.count > 0 {
             addRequests(requests)
         }
@@ -530,7 +530,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     /// Writes the OfflineRequestManager instances to the Documents directory
     public func saveToDisk() {
         guard let path = OfflineRequestManager.fileURL(fileName: fileName)?.path else { return }
-        pendingRequestDictionaries = pendingActions.flatMap { $0.request.dictionaryRepresentation }
+        pendingRequestDictionaries = pendingActions.compactMap { $0.request.dictionaryRepresentation }
         NSKeyedArchiver.archiveRootObject(self, toFile: path)
     }
     

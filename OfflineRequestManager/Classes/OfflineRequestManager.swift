@@ -216,17 +216,6 @@ private protocol OfflineRequestDelegate {
     func requestSentHeartbeat(_ request: OfflineRequest)
 }
 
-private extension Array where Element: OfflineRequest {
-    func request(withID id: String?) -> OfflineRequest? {
-        return first(where: { $0.id == id })
-    }
-    
-    mutating func removeRequest(_ request: OfflineRequest) {
-        guard let index = index(where: { $0.id == request.id }) else { return }
-        remove(at: index)
-    }
-}
-
 // Class for handling outstanding network requests; all data is written to disk in the case of app termination
 public class OfflineRequestManager: NSObject, NSCoding {
     
@@ -522,7 +511,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     ///
     /// - Parameter requests: Array of OfflineRequest objects to be queued
     public func queueRequests(_ requests: [OfflineRequest]) {
-        addRequests(requests) 
+        addRequests(requests)
         
         if requests.contains(where: { $0.dictionaryRepresentation != nil}) {
             saveToDisk()

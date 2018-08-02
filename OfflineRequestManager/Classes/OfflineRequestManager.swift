@@ -506,7 +506,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     ///   - request: OfflineRequest to be queued
     ///   - startImmediately: indicates whether an attempt should be made immediately or deferred until the next timer
     public func queueRequest(_ request: OfflineRequest, startImmediately: Bool = true) {
-        queueRequests([request])
+        queueRequests([request], startImmediately: startImmediately)
     }
     
     /// Enqueues an array of OfflineRequest objects

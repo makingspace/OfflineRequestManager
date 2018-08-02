@@ -502,22 +502,28 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     /// Enqueues a single OfflineRequest
     ///
-    /// - Parameter request: OfflineRequest to be queued
-    public func queueRequest(_ request: OfflineRequest) {
+    /// - Parameters:
+    ///   - request: OfflineRequest to be queued
+    ///   - startImmediately: indicates whether an attempt should be made immediately or deferred until the next timer
+    public func queueRequest(_ request: OfflineRequest, startImmediately: Bool = true) {
         queueRequests([request])
     }
     
     /// Enqueues an array of OfflineRequest objects
     ///
-    /// - Parameter requests: Array of OfflineRequest objects to be queued
-    public func queueRequests(_ requests: [OfflineRequest]) {
+    /// - Parameters:
+    ///   - request: Array of OfflineRequest objects to be queued
+    ///   - startImmediately: indicates whether an attempt should be made immediately or deferred until the next timer
+    public func queueRequests(_ requests: [OfflineRequest], startImmediately: Bool = true) {
         addRequests(requests)
         
         if requests.contains(where: { $0.dictionaryRepresentation != nil}) {
             saveToDisk()
         }
         
-        attemptSubmission()
+        if startImmediately {
+            attemptSubmission()
+        }
     }
     
     /// Allows for adjustment to pending requests before they are executed

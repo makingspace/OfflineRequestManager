@@ -135,7 +135,7 @@ class MSOfflineRequestManagerTests: QuickSpec {
                 expect(archivedManager?.totalRequestCount).to(equal(2))
                 archivedManager?.attemptSubmission()
                 
-                guard let request = archivedManager?.ongoingActions.first?.request as? MockRequest else {
+                guard let request = archivedManager?.ongoingRequests.first as? MockRequest else {
                     XCTFail("Failed to find test request")
                     return
                 }
@@ -151,7 +151,7 @@ class MSOfflineRequestManagerTests: QuickSpec {
                 expect(archivedManager?.totalRequestCount).to(equal(2))
                 archivedManager?.attemptSubmission()
                 
-                guard let adjustedRequest = archivedManager?.ongoingActions.first?.request as? MockRequest else {
+                guard let adjustedRequest = archivedManager?.ongoingRequests.first as? MockRequest else {
                     XCTFail("Failed to find test request")
                     return
                 }
@@ -206,8 +206,6 @@ class MSOfflineRequestManagerTests: QuickSpec {
                 }
             }
             
-            
-
             it("should indicate when a request has failed") {
                 waitUntil { done in
                     let request = MockRequest(dictionary: [:])!
@@ -396,6 +394,32 @@ class MSOfflineRequestManagerTests: QuickSpec {
                     
                     manager.queueRequest(request)
                 })
+            }
+        }
+        
+        describe("modifying existing requests") {
+            it("should allow for adjusting queued requests until they are in progress") {
+                manager.queueRequest(MockRequest(dictionary: ["name":"request1"])!)
+                manager.queueRequest(MockRequest(dictionary: ["name":"request2"])!)
+                manager.queueRequest(MockRequest(dictionary: ["name":"request3"])!)
+                
+                expect(manager.ongoingRequests.count).to(equal(1))
+                expect(manager.incompleteRequests.count).to(equal(3))
+                expect((manager.incompleteRequests[1] as! MockRequest).dictionary["name"] as? String).to(equal("request2"))
+                expect((manager.incompleteRequests[2] as! MockRequest).dictionary["name"] as? String).to(equal("request3"))
+                
+                manager.modifyPendingRequests { pendingRequests -> [OfflineRequest] in
+                    expect(pendingRequests.count).to(equal(2))
+                    let name1 = (pendingRequests[0] as! MockRequest).dictionary["name"] as! String
+                    let name2 = (pendingRequests[1] as! MockRequest).dictionary["name"] as! String
+                    expect(name1).to(equal("request2"))
+                    expect(name2).to(equal("request3"))
+                    return [MockRequest(dictionary: ["name":"\(name1) + \(name2)"])!]
+                }
+                
+                expect(manager.ongoingRequests.count).to(equal(1))
+                expect(manager.incompleteRequests.count).to(equal(2))
+                expect((manager.incompleteRequests[1] as! MockRequest).dictionary["name"] as? String).to(equal("request2 + request3"))
             }
         }
     }

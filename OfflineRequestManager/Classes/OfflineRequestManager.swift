@@ -30,7 +30,7 @@ public extension DictionaryRepresentable {
 }
 
 /// Protocol for objects enqueued in OfflineRequestManager to perform operations
-public protocol OfflineRequest: DictionaryRepresentable {
+public protocol OfflineRequest: class, DictionaryRepresentable {
     
     /// Called whenever the request manager instructs the object to perform its network request
     ///
@@ -46,16 +46,29 @@ public protocol OfflineRequest: DictionaryRepresentable {
 
 private var requestIdKey: UInt8 = 0
 private var requestDelegateKey: UInt8 = 0
+private var requestProgressKey: UInt8 = 0
 
 private extension OfflineRequest {
-    var requestID: String? {
-        get { return objc_getAssociatedObject(self, &requestIdKey) as? String }
+    var id: String {
+        get {
+            guard let id = objc_getAssociatedObject(self, &requestIdKey) as? String else {
+                let id = UUID().uuidString
+                self.id = id
+                return id
+            }
+            return id
+        }
         set { objc_setAssociatedObject(self, &requestIdKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
     }
     
-    var requestDelegate: OfflineRequestDelegate? {
+    var delegate: OfflineRequestDelegate? {
         get { return objc_getAssociatedObject(self, &requestDelegateKey) as? OfflineRequestDelegate }
         set { objc_setAssociatedObject(self, &requestDelegateKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
+    }
+    
+    var progress: Double {
+        get { return objc_getAssociatedObject(self, &requestProgressKey) as? Double ?? 0.0 }
+        set { objc_setAssociatedObject(self, &requestProgressKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
     }
 }
 
@@ -66,19 +79,19 @@ public extension OfflineRequest {
     
     /// Prompts the OfflineRequestManager to save to disk; Used to persist any data changes over the course of a request if needed
     func save() {
-        requestDelegate?.requestNeedsSave(self)
+        delegate?.requestNeedsSave(self)
     }
     
     /// Resets the timeout on the request; Useful for long requests that have multiple steps
     func sendHeartbeat() {
-        requestDelegate?.requestSentHeartbeat(self)
+        delegate?.requestSentHeartbeat(self)
     }
     
     /// Provides the current progress (0 to 1) on the ongoing request
     ///
     /// - Parameter progress: current request progress
     func updateProgress(to progress: Double) {
-        requestDelegate?.request(self, didUpdateTo: progress)
+        delegate?.request(self, didUpdateTo: progress)
     }
 }
 
@@ -192,7 +205,7 @@ private protocol OfflineRequestDelegate {
     ///   - progress: current progress (ranges from 0 to 1)
     func request(_ request: OfflineRequest, didUpdateTo progress: Double)
     
-    /// Callback indicating that the OfflineRequestManager should save the current state of its pending requests to disk
+    /// Callback indicating that the OfflineRequestManager should save the current state of its incomplete requests to disk
     ///
     /// - Parameter request: OfflineRequest that has updated and needs to be rewritten to disk
     func requestNeedsSave(_ request: OfflineRequest)
@@ -201,36 +214,6 @@ private protocol OfflineRequestDelegate {
     ///
     /// - Parameter request: OfflineRequest that is continuing to process and needs more time to complete
     func requestSentHeartbeat(_ request: OfflineRequest)
-}
-
-/// Class wrapping OfflineRequest to track its progress
-public class RequestAction: Equatable {
-    /// OfflineRequest being wrapped
-    var request: OfflineRequest
-    /// UUID of the action
-    public let id = UUID().uuidString
-    fileprivate var progress: Double = 0.0
-    
-    /// Designated initializer
-    init(request: OfflineRequest) {
-        self.request = request
-        self.request.requestID = id
-    }
-    
-    public static func ==(lhs: RequestAction, rhs: RequestAction) -> Bool {
-        return lhs.id == rhs.id
-    }
-}
-
-private extension Array where Element: RequestAction {
-    func action(forRequestID id: String?) -> RequestAction? {
-        return first(where: { $0.id == id })
-    }
-    
-    mutating func removeAction(_ action: RequestAction) {
-        guard let index = index(where: { $0 == action }) else { return }
-        remove(at: index)
-    }
 }
 
 // Class for handling outstanding network requests; all data is written to disk in the case of app termination
@@ -256,8 +239,8 @@ public class OfflineRequestManager: NSObject, NSCoding {
     }
     
     private func instantiateInitialRequests(withBlock block: (([String: Any]) -> OfflineRequest?)) {
-        guard pendingActions.count == 0 else { return }
-        let requests = pendingRequestDictionaries.compactMap { block($0) }
+        guard incompleteRequests.count == 0 else { return }
+        let requests = incompleteRequestDictionaries.compactMap { block($0) }
         if requests.count > 0 {
             addRequests(requests)
         }
@@ -288,6 +271,13 @@ public class OfflineRequestManager: NSObject, NSCoding {
     /// Maximum number of simultaneous requests allowed
     public var simultaneousRequestCap: Int = 10
     
+    /// Time between submission attempts
+    public var submissionInterval: TimeInterval = 10 {
+        didSet {
+            setup()
+        }
+    }
+    
     /// Name of file in Documents directory to which OfflineRequestManager object is archived by default
     public static let defaultFileName = "offline_request_manager"
     
@@ -306,9 +296,16 @@ public class OfflineRequestManager: NSObject, NSCoding {
     }
     
     /// Request actions currently being executed
-    public private(set) var ongoingActions = [RequestAction]()
-    private var pendingActions = [RequestAction]()
-    private var pendingRequestDictionaries = [[String: Any]]()
+    public private(set) var ongoingRequests = [OfflineRequest]()
+    public private(set) var incompleteRequests = [OfflineRequest]()
+    private var incompleteRequestDictionaries = [[String: Any]]()
+    private var pendingRequests: [OfflineRequest] {
+        return incompleteRequests.filter { request in
+            return !ongoingRequests.contains(where: { $0.id == request.id })
+        }
+    }
+    
+    private static let codingKey = "pendingRequestDictionaries"
     
     private var backgroundTask: UIBackgroundTaskIdentifier?
     private var submissionTimer: Timer?
@@ -321,13 +318,13 @@ public class OfflineRequestManager: NSObject, NSCoding {
     }
     
     required convenience public init?(coder aDecoder: NSCoder) {
-        guard let requestDicts = aDecoder.decodeObject(forKey: "pendingRequestDictionaries") as? [[String: Any]] else {
+        guard let requestDicts = aDecoder.decodeObject(forKey: OfflineRequestManager.codingKey) as? [[String: Any]] else {
             print ("Error Decoding Offline Request Dictionaries")
             return nil
         }
         
         self.init()
-        self.pendingRequestDictionaries = requestDicts
+        self.incompleteRequestDictionaries = requestDicts
     }
     
     deinit {
@@ -338,7 +335,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     }
     
     public func encode(with aCoder: NSCoder) {
-        aCoder.encode(pendingRequestDictionaries, forKey: "pendingRequestDictionaries")
+        aCoder.encode(incompleteRequestDictionaries, forKey: OfflineRequestManager.codingKey)
     }
     
     /// Generates a OfflineRequestManager instance tied to a file name in the Documents directory; creates a new object or pulls up the object written to disk if possible
@@ -380,9 +377,9 @@ public class OfflineRequestManager: NSObject, NSCoding {
         }
         reachabilityManager?.startListening()
         
-        let timer = Timer.scheduledTimer(timeInterval: 10, target: self, selector: #selector(attemptSubmission), userInfo: nil, repeats: true)
-        timer.fire()
-        submissionTimer = timer
+        submissionTimer?.invalidate()
+        submissionTimer = Timer.scheduledTimer(timeInterval: submissionInterval, target: self, selector: #selector(attemptSubmission), userInfo: nil, repeats: true)
+        submissionTimer?.fire()
     }
     
     private func registerBackgroundTask() {
@@ -400,25 +397,25 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     /// attempts to perform the next OfflineRequest action in the queue
     @objc open func attemptSubmission() {
-        guard let action = pendingActions.first(where: { !ongoingActions.contains($0) }),
-            ongoingActions.count < simultaneousRequestCap,
-            shouldAttemptRequest(action.request) else { return }
+        guard let request = incompleteRequests.first(where: { incompleteRequest in
+            !ongoingRequests.contains(where: { $0.id == incompleteRequest.id })
+        }), ongoingRequests.count < simultaneousRequestCap,
+            shouldAttemptRequest(request) else { return }
         
         registerBackgroundTask()
         
-        ongoingActions.append(action)
+        ongoingRequests.append(request)
         updateProgress()
         
-        var request = action.request
-        request.requestDelegate = self
+        request.delegate = self
         
         delegate?.offlineRequestManager(self, didStartRequest: request)
         
         request.perform { [unowned self] error in
-            guard let action = self.ongoingActions.action(forRequestID: request.requestID) else { return }
-            self.ongoingActions.removeAction(action)
+            guard let request = self.ongoingRequests.first(where: { $0.id == request.id }) else { return }  //ignore if we have cleared requests
             
-            NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(OfflineRequestManager.killRequest(_:)), object: request.requestID)
+            self.removeOngoingRequest(request)
+            NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(OfflineRequestManager.killRequest(_:)), object: request.id)
             
             if let error = error {
                 if (error as NSError).isNetworkError {
@@ -432,27 +429,32 @@ public class OfflineRequestManager: NSObject, NSCoding {
                 }
             }
             
-            self.completeAction(action, error: error)
+            self.completeRequest(request, error: error)
         }
         
-        perform(#selector(killRequest(_:)), with: request.requestID, afterDelay: requestTimeLimit)
+        perform(#selector(killRequest(_:)), with: request.id, afterDelay: requestTimeLimit)
         attemptSubmission()
     }
     
     @objc func killRequest(_ requestID: String?) {
-        guard let action = ongoingActions.action(forRequestID: requestID) else { return }
-        ongoingActions.removeAction(action)
-        completeAction(action, error: NSError.timeOutError)
+        guard let request = ongoingRequests.first(where: { $0.id == requestID} ) else { return }
+        self.removeOngoingRequest(request)
+        completeRequest(request, error: NSError.timeOutError)
     }
     
-    private func completeAction(_ action: RequestAction, error: Error?) {
-        self.popAction(action)
+    private func removeOngoingRequest(_ request: OfflineRequest) {
+        guard let index = ongoingRequests.index(where: { $0.id == request.id }) else { return }
+        ongoingRequests.remove(at: index)
+    }
+    
+    private func completeRequest(_ request: OfflineRequest, error: Error?) {
+        self.popRequest(request)
         
         if let error = error {
-            delegate?.offlineRequestManager(self, requestDidFail: action.request, withError: error)
+            delegate?.offlineRequestManager(self, requestDidFail: request, withError: error)
         }
         else {
-            delegate?.offlineRequestManager(self, didFinishRequest: action.request)
+            delegate?.offlineRequestManager(self, didFinishRequest: request)
         }
     }
     
@@ -468,12 +470,11 @@ public class OfflineRequestManager: NSObject, NSCoding {
         return connectionDetected && delegateAllowed
     }
     
-    private func popAction(_ action: RequestAction) {
-        guard let index = pendingActions.index(of: action) else { return }
+    private func popRequest(_ request: OfflineRequest) {
+        guard let index = incompleteRequests.index(where: { $0.id == request.id } ) else { return }
+        incompleteRequests.remove(at: index)
         
-        pendingActions.remove(at: index)
-        
-        if pendingActions.count == 0 {
+        if incompleteRequests.count == 0 {
             
             endBackgroundTask()
             clearAllRequests()
@@ -490,12 +491,9 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     /// Clears out the current OfflineRequest queue and returns to a neutral state
     public func clearAllRequests() {
-        ongoingActions.forEach { action in
-            action.request.requestDelegate = nil
-        }
-        
-        pendingActions.removeAll()
-        ongoingActions.removeAll()
+        ongoingRequests.forEach { $0.delegate = nil }
+        incompleteRequests.removeAll()
+        ongoingRequests.removeAll()
         completedRequestCount = 0
         totalRequestCount = 0
         progress = 1
@@ -504,40 +502,54 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     /// Enqueues a single OfflineRequest
     ///
-    /// - Parameter request: OfflineRequest to be queued
-    public func queueRequest(_ request: OfflineRequest) {
-        queueRequests([request])
+    /// - Parameters:
+    ///   - request: OfflineRequest to be queued
+    ///   - startImmediately: indicates whether an attempt should be made immediately or deferred until the next timer
+    public func queueRequest(_ request: OfflineRequest, startImmediately: Bool = true) {
+        queueRequests([request], startImmediately: startImmediately)
     }
     
     /// Enqueues an array of OfflineRequest objects
     ///
-    /// - Parameter requests: Array of OfflineRequest objects to be queued
-    public func queueRequests(_ requests: [OfflineRequest]) {
+    /// - Parameters:
+    ///   - request: Array of OfflineRequest objects to be queued
+    ///   - startImmediately: indicates whether an attempt should be made immediately or deferred until the next timer
+    public func queueRequests(_ requests: [OfflineRequest], startImmediately: Bool = true) {
         addRequests(requests)
         
         if requests.contains(where: { $0.dictionaryRepresentation != nil}) {
             saveToDisk()
         }
         
-        attemptSubmission()
+        if startImmediately {
+            attemptSubmission()
+        }
+    }
+    
+    /// Allows for adjustment to pending requests before they are executed
+    ///
+    /// - Parameter modifyBlock: block making any necessary adjustments to the array of pending requests
+    public func modifyPendingRequests(_ modifyBlock: (([OfflineRequest]) -> [OfflineRequest])) {
+        incompleteRequests = ongoingRequests + modifyBlock(pendingRequests)
+        saveToDisk()
     }
     
     private func addRequests(_ requests: [OfflineRequest]) {
-        pendingActions.append(contentsOf: requests.map { RequestAction(request: $0) })
-        totalRequestCount = pendingActions.count + completedRequestCount
+        incompleteRequests.append(contentsOf: requests)
+        totalRequestCount = incompleteRequests.count + completedRequestCount
     }
     
     /// Writes the OfflineRequestManager instances to the Documents directory
     public func saveToDisk() {
         guard let path = OfflineRequestManager.fileURL(fileName: fileName)?.path else { return }
-        pendingRequestDictionaries = pendingActions.compactMap { $0.request.dictionaryRepresentation }
+        incompleteRequestDictionaries = incompleteRequests.compactMap { $0.dictionaryRepresentation }
         NSKeyedArchiver.archiveRootObject(self, toFile: path)
     }
     
     fileprivate func updateProgress() {
         let uploadUnit = 1 / max(1.0, Double(totalRequestCount))
         
-        let ongoingProgress = ongoingActions.reduce(0.0) { $0 + $1.progress }
+        let ongoingProgress = ongoingRequests.reduce(0.0) { $0 + $1.progress }
         let newProgressValue = (Double(self.completedRequestCount) + ongoingProgress) * uploadUnit
         
         let totalProgress = min(1, max(0, newProgressValue))
@@ -548,8 +560,8 @@ public class OfflineRequestManager: NSObject, NSCoding {
 extension OfflineRequestManager: OfflineRequestDelegate {
     
     public func request(_ request: OfflineRequest, didUpdateTo progress: Double) {
-        guard let action = ongoingActions.action(forRequestID: request.requestID) else { return }
-        action.progress = progress
+        guard let request = ongoingRequests.first(where: { $0.id == request.id }) else { return }
+        request.progress = progress
         updateProgress()
     }
     
@@ -558,8 +570,8 @@ extension OfflineRequestManager: OfflineRequestDelegate {
     }
     
     public func requestSentHeartbeat(_ request: OfflineRequest) {
-        NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(killRequest(_:)), object: request.requestID)
-        perform(#selector(killRequest(_:)), with: request.requestID, afterDelay: requestTimeLimit)
+        NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(killRequest(_:)), object: request.id)
+        perform(#selector(killRequest(_:)), with: request.id, afterDelay: requestTimeLimit)
     }
 }
 

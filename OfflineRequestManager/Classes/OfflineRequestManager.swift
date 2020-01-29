@@ -47,6 +47,7 @@ public protocol OfflineRequest: class, DictionaryRepresentable {
 private var requestIdKey: UInt8 = 0
 private var requestDelegateKey: UInt8 = 0
 private var requestProgressKey: UInt8 = 0
+private var requestTimestampKey: UInt8 = 0
 
 private extension OfflineRequest {
     var id: String {
@@ -69,6 +70,18 @@ private extension OfflineRequest {
     var progress: Double {
         get { return objc_getAssociatedObject(self, &requestProgressKey) as? Double ?? 0.0 }
         set { objc_setAssociatedObject(self, &requestProgressKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
+    }
+    
+    var timestamp: Date {
+        get {
+            guard let ts = objc_getAssociatedObject(self, &requestTimestampKey) as? Date else {
+                let ts = Date()
+                self.timestamp = ts
+                return ts
+            }
+            return ts
+        }
+        set { objc_setAssociatedObject(self, &requestTimestampKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
     }
 }
 
@@ -224,7 +237,13 @@ public class OfflineRequestManager: NSObject, NSCoding {
     public var delegate: OfflineRequestManagerDelegate? {
         didSet {
             if let delegate = delegate {
-                instantiateInitialRequests { delegate.offlineRequest(withDictionary: $0) }
+                instantiateInitialRequests { dict -> OfflineRequest? in
+                    guard let request = delegate.offlineRequest(withDictionary: dict) else { return nil }
+                    if let ts = dict[OfflineRequestManager.timestampKey] as? Date {
+                        request.timestamp = ts
+                    }
+                    return request
+                }
             }
         }
     }
@@ -306,6 +325,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     }
     
     private static let codingKey = "pendingRequestDictionaries"
+    private static let timestampKey = "offline_request_timestamp"
     
     private var backgroundTask: UIBackgroundTaskIdentifier?
     private var submissionTimer: Timer?
@@ -534,6 +554,13 @@ public class OfflineRequestManager: NSObject, NSCoding {
         saveToDisk()
     }
     
+    /// Clears out any pending requests that are older than the specified threshold; Defaults to 12 hours
+    /// - Parameter threshold: maximum number of seconds since the request was first attempted
+    public func clearStaleRequests(withThreshold threshold: TimeInterval = 12 * 60 * 60) {
+        let current = Date()
+        modifyPendingRequests { $0.filter { current.timeIntervalSince($0.timestamp) <= threshold } }
+    }
+    
     private func addRequests(_ requests: [OfflineRequest]) {
         incompleteRequests.append(contentsOf: requests)
         totalRequestCount = incompleteRequests.count + completedRequestCount
@@ -542,7 +569,11 @@ public class OfflineRequestManager: NSObject, NSCoding {
     /// Writes the OfflineRequestManager instances to the Documents directory
     public func saveToDisk() {
         guard let path = OfflineRequestManager.fileURL(fileName: fileName)?.path else { return }
-        incompleteRequestDictionaries = incompleteRequests.compactMap { $0.dictionaryRepresentation }
+        incompleteRequestDictionaries = incompleteRequests.compactMap { request in
+            var dict = request.dictionaryRepresentation
+            dict?[OfflineRequestManager.timestampKey] = request.timestamp
+            return dict
+        }
         NSKeyedArchiver.archiveRootObject(self, toFile: path)
     }
     

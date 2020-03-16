@@ -350,7 +350,6 @@ public class OfflineRequestManager: NSObject, NSCoding {
     deinit {
         submissionTimer?.invalidate()
         
-        reachabilityManager?.listener = nil
         reachabilityManager?.stopListening()
     }
     
@@ -392,10 +391,9 @@ public class OfflineRequestManager: NSObject, NSCoding {
     }
     
     private func setup() {
-        reachabilityManager?.listener = { [unowned self] status in
+        reachabilityManager?.startListening(onUpdatePerforming: { [unowned self] status in
             self.connected = status != .notReachable
-        }
-        reachabilityManager?.startListening()
+        })
         
         submissionTimer?.invalidate()
         submissionTimer = Timer.scheduledTimer(timeInterval: submissionInterval, target: self, selector: #selector(attemptSubmission), userInfo: nil, repeats: true)
@@ -480,8 +478,9 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     private func shouldAttemptRequest(_ request: OfflineRequest) -> Bool {
         var reachable: Bool? = nil
+        
         if let manager = reachabilityManager {
-            reachable = manager.networkReachabilityStatus != .notReachable
+            reachable = manager.status != .notReachable
         }
         
         let connectionDetected = reachable ?? connected

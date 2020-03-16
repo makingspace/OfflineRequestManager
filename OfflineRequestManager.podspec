@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'OfflineRequestManager'
-  s.version          = '1.1.1'
+  s.version          = '1.1.2'
   s.summary          = 'Swift framework for ensuring that network requests are sent even if the device is offline or the app is terminated'
   s.description      = <<-DESC
                         OfflineRequestManager allows apps to enqueue network requests in the background regardless of current connectivity.

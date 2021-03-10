@@ -7,7 +7,6 @@
 //
 
 @testable import OfflineRequestManager
-import Alamofire
 import Quick
 import Nimble
 
@@ -112,8 +111,6 @@ class MSOfflineRequestManagerTests: QuickSpec {
         
         beforeSuite {
             manager.simultaneousRequestCap = 1
-            manager.reachabilityManager?.stopListening()
-            manager.reachabilityManager = nil
             manager.saveToDisk()
             
             manager.delegate = listener
@@ -130,7 +127,8 @@ class MSOfflineRequestManagerTests: QuickSpec {
                 
                 var archivedManager = OfflineRequestManager.archivedManager(fileName: testFileName)
                 
-                archivedManager?.delegate = OfflineRequestManagerListener()
+                let delegate = OfflineRequestManagerListener()
+                archivedManager?.delegate = delegate
                 expect(archivedManager).toNot(beNil())
                 expect(archivedManager?.totalRequestCount).to(equal(2))
                 archivedManager?.attemptSubmission()
@@ -146,13 +144,15 @@ class MSOfflineRequestManagerTests: QuickSpec {
                 
                 archivedManager = OfflineRequestManager.archivedManager(fileName: testFileName)
                 
-                archivedManager?.delegate = OfflineRequestManagerListener()
+                let anotherDelegate = OfflineRequestManagerListener()
+                archivedManager?.delegate = anotherDelegate
+                
                 expect(archivedManager).toNot(beNil())
                 expect(archivedManager?.totalRequestCount).to(equal(2))
                 archivedManager?.attemptSubmission()
                 
                 guard let adjustedRequest = archivedManager?.ongoingRequests.first as? MockRequest else {
-                    XCTFail("Failed to find test request")
+                    fail("Failed to find test request")
                     return
                 }
                 
@@ -376,7 +376,7 @@ class MSOfflineRequestManagerTests: QuickSpec {
         
         describe("killing stalled requests") {
             it("should kill the request after waiting the specified amount of time") {
-                waitUntil(timeout: 2, action: { done in
+                waitUntil(timeout: .seconds(2), action: { done in
                     manager.requestTimeLimit = 1
                     let request = MockRequest(dictionary: [:])!
                     request.stalled = true

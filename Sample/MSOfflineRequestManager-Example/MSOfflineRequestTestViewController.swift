@@ -29,15 +29,33 @@ class MSOfflineRequestTestViewController: UIViewController {
     }
     
     func updateLabels() {
-        completedRequestsLabel.text = "\(offlineRequestManager.completedRequestCount)"
-        pendingRequestsLabel.text = "\(offlineRequestManager.totalRequestCount - offlineRequestManager.completedRequestCount)"
-        totalProgressLabel.text = "\(offlineRequestManager.progress * 100)"
-        connectionStatusLabel.text = offlineRequestManager.connected ? "Online" : "Offline"
+        DispatchQueue.main.async {
+            self.completedRequestsLabel.text = "\(self.offlineRequestManager.completedRequestCount)"
+            self.pendingRequestsLabel.text = "\(self.offlineRequestManager.totalRequestCount - self.offlineRequestManager.completedRequestCount)"
+            self.totalProgressLabel.text = "\(self.offlineRequestManager.progress * 100)"
+            self.connectionStatusLabel.text = self.offlineRequestManager.connected ? "Online" : "Offline"
+        }
     }
     
     @IBAction func queueRequest() {
         offlineRequestManager.queueRequest(MSTestRequest.newRequest())
         updateLabels()
+    }
+    
+    @IBAction func queue100Requests() {
+        for _ in (1...50) {
+            DispatchQueue.main.async {
+                self.offlineRequestManager.queueRequest(MSTestRequest.newRequest())
+                self.updateLabels()
+            }
+        }
+        
+//        for _ in (1...50) {
+//            DispatchQueue.global().async {
+//                self.offlineRequestManager.queueRequest(MSTestRequest.newRequest())
+//                self.updateLabels()
+//            }
+//        }
     }
     
     @IBAction func toggleRequestsAllowed(_ sender: UISwitch) {

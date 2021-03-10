@@ -7,234 +7,15 @@
 //
 
 import Foundation
-import Alamofire
 import ObjectiveC
-
-/// Protocol for objects that can be converted to and from Dictionaries
-public protocol DictionaryRepresentable {
-    /// Optional initializer that is necessary for recovering outstanding requests from disk when restarting the app
-    init?(dictionary: [String : Any])
-    
-    /// Optionally provides a dictionary to be written to disk; This dictionary is what will be passed to the initializer above
-    ///
-    /// - Returns: Returns a dictionary containing any necessary information to retry the request if the app is terminated
-    var dictionaryRepresentation: [String : Any]? { get }
-}
-
-public extension DictionaryRepresentable {
-    init?(dictionary: [String : Any]) { return nil }
-    
-    var dictionaryRepresentation: [String : Any]? {
-        return nil
-    }
-}
-
-/// Protocol for objects enqueued in OfflineRequestManager to perform operations
-public protocol OfflineRequest: class, DictionaryRepresentable {
-    
-    /// Called whenever the request manager instructs the object to perform its network request
-    ///
-    /// - Parameter completion: completion fired when done, either with an Error or nothing in the case of success
-    func perform(completion: @escaping (Error?) -> Swift.Void)
-    
-    /// Allows the OfflineRequest object to recover from an error if desired; Only called if the error is not network related
-    ///
-    /// - Parameter error: Error associated with the failure, which should be equal to what was passed back in the perform(completion:) call
-    /// - Returns: a Bool indicating whether perform(completion:) should be called again or the request should be dropped
-    func shouldAttemptResubmission(forError error: Error) -> Bool
-}
-
-private var requestIdKey: UInt8 = 0
-private var requestDelegateKey: UInt8 = 0
-private var requestProgressKey: UInt8 = 0
-private var requestTimestampKey: UInt8 = 0
-
-private extension OfflineRequest {
-    var id: String {
-        get {
-            guard let id = objc_getAssociatedObject(self, &requestIdKey) as? String else {
-                let id = UUID().uuidString
-                self.id = id
-                return id
-            }
-            return id
-        }
-        set { objc_setAssociatedObject(self, &requestIdKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
-    }
-    
-    var delegate: OfflineRequestDelegate? {
-        get { return objc_getAssociatedObject(self, &requestDelegateKey) as? OfflineRequestDelegate }
-        set { objc_setAssociatedObject(self, &requestDelegateKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
-    }
-    
-    var progress: Double {
-        get { return objc_getAssociatedObject(self, &requestProgressKey) as? Double ?? 0.0 }
-        set { objc_setAssociatedObject(self, &requestProgressKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
-    }
-    
-    var timestamp: Date {
-        get {
-            guard let ts = objc_getAssociatedObject(self, &requestTimestampKey) as? Date else {
-                let ts = Date()
-                self.timestamp = ts
-                return ts
-            }
-            return ts
-        }
-        set { objc_setAssociatedObject(self, &requestTimestampKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
-    }
-}
-
-public extension OfflineRequest {
-    func shouldAttemptResubmission(forError error: Error) -> Bool {
-        return false
-    }
-    
-    /// Prompts the OfflineRequestManager to save to disk; Used to persist any data changes over the course of a request if needed
-    func save() {
-        delegate?.requestNeedsSave(self)
-    }
-    
-    /// Resets the timeout on the request; Useful for long requests that have multiple steps
-    func sendHeartbeat() {
-        delegate?.requestSentHeartbeat(self)
-    }
-    
-    /// Provides the current progress (0 to 1) on the ongoing request
-    ///
-    /// - Parameter progress: current request progress
-    func updateProgress(to progress: Double) {
-        delegate?.request(self, didUpdateTo: progress)
-    }
-}
-
-/// Convenience methods for generating and working with dictionaries
-public extension OfflineRequest where Self: NSObject {
-    
-    /// Generates a dictionary using the values associated with the given key paths
-    ///
-    /// - Parameter keyPaths: key paths of the properties to include in the dictionary
-    /// - Returns: dictionary of the key paths and their associated values
-    func dictionary(withKeyPaths keyPaths: [String]) -> [String : Any] {
-        var dictionary = [String : Any]()
-        keyPaths.forEach { dictionary[$0] = self.value(forKey: $0) }
-        return dictionary
-    }
-    
-    /// Parses through the provided dictionary and sets the appropriate values if they are found
-    ///
-    /// - Parameters:
-    ///   - dictionary: dictionary containing values for the key paths
-    ///   - keyPaths: array of key paths
-    func sync(withDictionary dictionary: [String: Any], usingKeyPaths keyPaths: [String]) {
-        keyPaths.forEach { path in
-            guard let value = dictionary[path] else { return }
-            self.setValue(value, forKey: path)
-        }
-    }
-}
-
-/// Protocol for receiving callbacaks from OfflineRequestManager and reconfiguring a new OfflineRequestManager from dictionaries saved to disk in the case of 
-/// previous requests that never completed
-public protocol OfflineRequestManagerDelegate {
-    
-    /// Method that the delegate uses to generate OfflineRequest objects from dictionaries written to disk
-    ///
-    /// - Parameter dictionary: dictionary saved to disk associated with an unfinished request
-    /// - Returns: OfflineRequest object to be queued
-    func offlineRequest(withDictionary dictionary: [String: Any]) -> OfflineRequest?
-    
-    /// Callback indicating the OfflineRequestManager's current progress
-    ///
-    /// - Parameters:
-    ///   - manager: OfflineRequestManager instance
-    ///   - progress: current progress for all ongoing requests (ranges from 0 to 1)
-    func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateProgress progress: Double)
-    
-    /// Callback indicating the OfflineRequestManager's current connection status
-    ///
-    /// - Parameters:
-    ///   - manager: OfflineRequestManager instance
-    ///   - connected: value indicating whether there is currently connectivity
-    func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateConnectionStatus connected: Bool)
-    
-    /// Callback that can be used to block a request attempt
-    ///
-    ///   - manager: OfflineRequestManager instance
-    ///   - request: OfflineRequest to be performed
-    /// - Returns: value indicating whether the OfflineRequestManager should move forward with the request attempt
-    func offlineRequestManager(_ manager: OfflineRequestManager, shouldAttemptRequest request: OfflineRequest) -> Bool
-    
-    /// Callback providing the opportunity to reconfigure and reattempt an OfflineRequest after a failure not related to connectivity issues
-    ///
-    /// - Parameters:
-    ///   - manager: OfflineRequestManager instance
-    ///   - request: OfflineRequest that failed
-    ///   - error: NSError associated with the failure
-    /// - Returns: value indicating whether the OfflineRequestManager should reattempt the OfflineRequest action
-    func offlineRequestManager(_ manager: OfflineRequestManager, shouldReattemptRequest request: OfflineRequest, withError error: Error) -> Bool
-    
-    /// Callback indicating that the OfflineRequest action has started
-    ///
-    /// - Parameters:
-    ///   - manager: OfflineRequestManager instance
-    ///   - request: OfflineRequest that started its action
-    func offlineRequestManager(_ manager: OfflineRequestManager, didStartRequest request: OfflineRequest)
-    
-    /// Callback indicating that the OfflineRequest action has successfully finished
-    ///
-    /// - Parameters:
-    ///   - manager: OfflineRequestManager instance
-    ///   - request: OfflineRequest that finished its action
-    func offlineRequestManager(_ manager: OfflineRequestManager, didFinishRequest request: OfflineRequest)
-    
-    /// Callback indicating that the OfflineRequest action has failed for reasons unrelated to connectivity
-    ///
-    /// - Parameters:
-    ///   - manager: OfflineRequestManager instance
-    ///   - request: OfflineRequest that failed
-    ///   - error: NSError associated with the failure
-    func offlineRequestManager(_ manager: OfflineRequestManager, requestDidFail request: OfflineRequest, withError error: Error)
-}
-
-public extension OfflineRequestManagerDelegate {
-    func offlineRequest(withDictionary dictionary: [String: Any]) -> OfflineRequest? { return nil }
-    func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateProgress progress: Double) { }
-    func offlineRequestManager(_ manager: OfflineRequestManager, didUpdateConnectionStatus connected: Bool) { }
-    func offlineRequestManager(_ manager: OfflineRequestManager, shouldAttemptRequest request: OfflineRequest) -> Bool { return true }
-    func offlineRequestManager(_ manager: OfflineRequestManager, shouldReattemptRequest request: OfflineRequest, withError error: Error) -> Bool { return false }
-    func offlineRequestManager(_ manager: OfflineRequestManager, didStartRequest request: OfflineRequest) { }
-    func offlineRequestManager(_ manager: OfflineRequestManager, didFinishRequest request: OfflineRequest) { }
-    func offlineRequestManager(_ manager: OfflineRequestManager, requestDidFail request: OfflineRequest, withError error: Error) { }
-}
-
-/// Protocol that OfflineRequestManager conforms to to listen for callbacks from the currently processing OfflineRequest object
-private protocol OfflineRequestDelegate {
-    
-    /// Callback indicating the OfflineRequest's current progress
-    ///
-    /// - Parameters:
-    ///   - request: OfflineRequest instance
-    ///   - progress: current progress (ranges from 0 to 1)
-    func request(_ request: OfflineRequest, didUpdateTo progress: Double)
-    
-    /// Callback indicating that the OfflineRequestManager should save the current state of its incomplete requests to disk
-    ///
-    /// - Parameter request: OfflineRequest that has updated and needs to be rewritten to disk
-    func requestNeedsSave(_ request: OfflineRequest)
-    
-    /// Callback indicating that the OfflineRequestManager should give the request more time to complete
-    ///
-    /// - Parameter request: OfflineRequest that is continuing to process and needs more time to complete
-    func requestSentHeartbeat(_ request: OfflineRequest)
-}
+import Network
 
 // Class for handling outstanding network requests; all data is written to disk in the case of app termination
 public class OfflineRequestManager: NSObject, NSCoding {
     
     /// Object listening to all callbacks from the OfflineRequestManager.  Must implement either delegate or requestInstantiationBlock to send archived requests
     /// when recovering from app termination
-    public var delegate: OfflineRequestManagerDelegate? {
+    public weak var delegate: OfflineRequestManagerDelegate? {
         didSet {
             if let delegate = delegate {
                 instantiateInitialRequests { dict -> OfflineRequest? in
@@ -280,10 +61,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     public private(set) var totalRequestCount = 0
     /// Index of current request within the currently ongoing requests
     public private(set) var completedRequestCount = 0
-    
-    /// NetworkReachabilityManager used to observe connectivity status. Can be set to nil to allow requests to be attempted when offline
-    public var reachabilityManager = NetworkReachabilityManager()
-    
+        
     /// Time limit in seconds before OfflineRequestManager will kill an ongoing OfflineRequest
     public var requestTimeLimit: TimeInterval = 120
     
@@ -350,7 +128,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     deinit {
         submissionTimer?.invalidate()
         
-        reachabilityManager?.stopListening()
+        monitor.cancel()
     }
     
     public func encode(with aCoder: NSCoder) {
@@ -385,18 +163,37 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     private static func fileURL(fileName: String) -> URL? {
         do {
-            return try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false).appendingPathComponent(fileName)
+            return try FileManager.default.url(for: .documentDirectory,
+                                               in: .userDomainMask,
+                                               appropriateFor: nil,
+                                               create: false).appendingPathComponent(fileName)
         }
         catch { return nil }
     }
     
+    let monitor = NWPathMonitor()
+    let monitorQueue = DispatchQueue(label: "Monitor")
+    
     private func setup() {
-        reachabilityManager?.startListening(onUpdatePerforming: { [unowned self] status in
-            self.connected = status != .notReachable
-        })
-        
+        monitor.pathUpdateHandler = { path in
+            if path.status == .satisfied {
+                print("📡 Connected.")
+                self.connected = true
+            } else {
+                print("📡 No connection.")
+                self.connected = false
+            }
+
+            print(path.isExpensive)
+        }
+        monitor.start(queue: monitorQueue)
+                
         submissionTimer?.invalidate()
-        submissionTimer = Timer.scheduledTimer(timeInterval: submissionInterval, target: self, selector: #selector(attemptSubmission), userInfo: nil, repeats: true)
+        submissionTimer = Timer.scheduledTimer(timeInterval: submissionInterval,
+                                               target: self,
+                                               selector: #selector(attemptSubmission),
+                                               userInfo: nil,
+                                               repeats: true)
         submissionTimer?.fire()
     }
     
@@ -476,17 +273,14 @@ public class OfflineRequestManager: NSObject, NSCoding {
         }
     }
     
+    private var isConnected : Bool {
+        monitor.currentPath.status == .satisfied
+    }
+    
     private func shouldAttemptRequest(_ request: OfflineRequest) -> Bool {
-        var reachable: Bool? = nil
-        
-        if let manager = reachabilityManager {
-            reachable = manager.status != .notReachable
-        }
-        
-        let connectionDetected = reachable ?? connected
         let delegateAllowed = (delegate?.offlineRequestManager(self, shouldAttemptRequest: request) ?? true)
         
-        return connectionDetected && delegateAllowed
+        return isConnected && delegateAllowed
     }
     
     private func popRequest(_ request: OfflineRequest) {

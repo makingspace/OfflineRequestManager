@@ -9,10 +9,11 @@
 import Foundation
 import ObjectiveC
 import Network
+import BackgroundTasks
 
 // Class for handling outstanding network requests; all data is written to disk in the case of app termination
 public class OfflineRequestManager: NSObject, NSCoding {
-    
+   
     /// Object listening to all callbacks from the OfflineRequestManager.  Must implement either delegate or requestInstantiationBlock to send archived requests
     /// when recovering from app termination
     public weak var delegate: OfflineRequestManagerDelegate? {
@@ -110,6 +111,8 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     private var fileName = ""
     
+    //MARK: lifecycle
+    
     override init() {
         super.init()
         setup()
@@ -123,6 +126,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
         
         self.init()
         self.incompleteRequestDictionaries = requestDicts
+    
     }
     
     deinit {
@@ -176,15 +180,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     private func setup() {
         monitor.pathUpdateHandler = { path in
-            if path.status == .satisfied {
-                print("📡 Connected.")
-                self.connected = true
-            } else {
-                print("📡 No connection.")
-                self.connected = false
-            }
-
-            print(path.isExpensive)
+            self.connected = path.status == .satisfied
         }
         monitor.start(queue: monitorQueue)
                 
@@ -197,9 +193,14 @@ public class OfflineRequestManager: NSObject, NSCoding {
         submissionTimer?.fire()
     }
     
+    let backgroundDownloadingTaskName = "background downloading"
     private func registerBackgroundTask() {
         if backgroundTask == nil {
-            backgroundTask = UIApplication.shared.beginBackgroundTask(expirationHandler: nil)
+            //only if the bg task wasn't registered before
+            backgroundTask = UIApplication.shared.beginBackgroundTask(withName: backgroundDownloadingTaskName, expirationHandler: {
+                self.saveToDisk()
+                self.endBackgroundTask()
+            })
         }
     }
     
@@ -212,32 +213,50 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     /// attempts to perform the next OfflineRequest action in the queue
     @objc open func attemptSubmission() {
-        guard let request = incompleteRequests.first(where: { incompleteRequest in
+        let firstIncompleteRequest = incompleteRequests.first(where: { incompleteRequest in
             !ongoingRequests.contains(where: { $0.id == incompleteRequest.id })
-        }), ongoingRequests.count < simultaneousRequestCap,
-            shouldAttemptRequest(request) else { return }
+        })
+        
+        guard let request = firstIncompleteRequest, ongoingRequests.count < simultaneousRequestCap,
+            shouldAttemptRequest(request) else {
+            return
+        }
         
         registerBackgroundTask()
         
         ongoingRequests.append(request)
+        
         updateProgress()
         
+        submitRequest(request)
+        
+        attemptSubmission()
+    }
+    
+    private func submitRequest(_ request: OfflineRequest) {
         request.delegate = self
         
         delegate?.offlineRequestManager(self, didStartRequest: request)
         
+        //TODO: do it in a background queue.
         request.perform { [unowned self] error in
-            guard let request = self.ongoingRequests.first(where: { $0.id == request.id }) else { return }  //ignore if we have cleared requests
+            guard let request = self.ongoingRequests.first(where: { $0.id == request.id }) else {
+                return
+            }  //ignore if we have cleared requests
             
             self.removeOngoingRequest(request)
-            NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(OfflineRequestManager.killRequest(_:)), object: request.id)
+            NSObject.cancelPreviousPerformRequests(withTarget: self,
+                                                   selector: #selector(OfflineRequestManager.killRequest(_:)),
+                                                   object: request.id)
             
             if let error = error {
                 if (error as NSError).isNetworkError {
                     return      //will retry on the next attemptSubmission call
                 }
-                else if request.shouldAttemptResubmission(forError: error) == true ||
-                    self.delegate?.offlineRequestManager(self, shouldReattemptRequest: request, withError: error) == true {
+                else if request.shouldAttemptResubmission(forError: error) ||
+                            self.delegate?.offlineRequestManager(self,
+                                                                 shouldReattemptRequest: request,
+                                                                 withError: error) == true {
                     
                     self.attemptSubmission()
                     return
@@ -248,7 +267,6 @@ public class OfflineRequestManager: NSObject, NSCoding {
         }
         
         perform(#selector(killRequest(_:)), with: request.id, afterDelay: requestTimeLimit)
-        attemptSubmission()
     }
     
     @objc func killRequest(_ requestID: String?) {

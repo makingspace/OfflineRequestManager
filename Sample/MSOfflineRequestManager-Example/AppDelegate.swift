@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import OfflineRequestManager
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -14,7 +15,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        dispatchWork(.global(), from:1, to: 100, messsage: "🌍")
+        dispatchWork(.main, from:1, to: 1000, messsage: "🚀")
         return true
     }
 
@@ -42,4 +44,25 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
 }
+
+
+let t = Throttler()
+
+func dispatchWork(_ queue: DispatchQueue = .main, from beginning:Int = 1, to end: Int = 20, messsage:String ) {
+    for each in beginning...end {
+        queue.async {
+            let scheduledAction = t.execute(on: queue) {
+                
+                print("\(messsage) executed \(each)! on \(Thread.current.name)")
+            }
+            
+            scheduledAction.onBlockCalled = {
+                queue.asyncAfter(deadline: .now() + .seconds(Int.random(in: 1...2))) {
+                    t.markBlockDone(identifier: scheduledAction.identifier)
+                }
+            }
+        }
+    }
+}
+
 

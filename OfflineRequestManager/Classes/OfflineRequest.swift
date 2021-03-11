@@ -90,7 +90,7 @@ public extension OfflineRequest {
 
 /// Convenience methods for generating and working with dictionaries
 public extension OfflineRequest where Self: NSObject {
-    
+
     /// Generates a dictionary using the values associated with the given key paths
     ///
     /// - Parameter keyPaths: key paths of the properties to include in the dictionary

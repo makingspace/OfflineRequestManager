@@ -15,15 +15,7 @@ class ThreadSafeRequestQueue {
     private(set) var completedRequestCount = 0
     
     private var mutex: DispatchQueue = DispatchQueue(label: "mutex for throttling")
-    
-    var pendingRequests: [OfflineRequest] {
-        mutex.sync {
-            return incompleteRequests.filter { request in
-                return !ongoingRequests.contains(where: { $0.id == request.id })
-            }
-        }
-    }
-    
+  
     var hasIncompleteRequests: Bool {
         mutex.sync {
             return incompleteRequests.count > 0
@@ -128,6 +120,9 @@ class ThreadSafeRequestQueue {
     
     func modifyPendingRequests(_ modifyBlock: (([OfflineRequest]) -> [OfflineRequest])) {
         mutex.sync {
+            let pendingRequests = incompleteRequests.filter { request in
+                return !ongoingRequests.contains(where: { $0.id == request.id })
+            }
             incompleteRequests = ongoingRequests + modifyBlock(pendingRequests)
         }
     }

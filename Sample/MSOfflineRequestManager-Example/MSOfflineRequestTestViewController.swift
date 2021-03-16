@@ -60,7 +60,7 @@ class MSOfflineRequestTestViewController: UIViewController {
     
     @IBAction func toggleRequestsAllowed(_ sender: UISwitch) {
         requestsAllowed = sender.isOn
-        offlineRequestManager.attemptSubmission()   //this would happen within 10 seconds anyway, but can be kickstarted
+        offlineRequestManager.attemptSubmission()   
     }
     
     let throttler = Throttler()

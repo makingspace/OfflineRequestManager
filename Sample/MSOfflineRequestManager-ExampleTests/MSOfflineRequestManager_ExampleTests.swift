@@ -160,12 +160,14 @@ class MSOfflineRequestManagerTests: QuickSpec {
             }
         }
         
+        
         describe("request lifecycle") {
             
             beforeEach {
                 manager.clearAllRequests()
             }
             
+       
             it("should indicate when a request has started") {
                 waitUntil { done in
                     let request = MockRequest(dictionary: [:])!
@@ -266,12 +268,46 @@ class MSOfflineRequestManagerTests: QuickSpec {
             }
             
             context("multiple requests") {
+                it("should queue 20 requests from multiple queues") {
+                    waitUntil(timeout: .seconds(5)) { done in
+                        expect(manager.progress).to(equal(1))
+                        
+                        let requestsMain = (1...10).map{_ in MockRequest(dictionary: [:])!}
+                        let requestsBackground = (1...10).map{_ in MockRequest(dictionary: [:])!}
+                        let requests = requestsMain + requestsBackground
+                        
+                        var finishedCount = 0
+                        listener.triggerBlock = { type in
+                            switch type {
+                            case .finished:
+                                finishedCount += 1
+                                print("🚀 finished \(finishedCount)")
+                                if finishedCount == requests.count {
+                                    done()
+                                }
+                            default:
+                                break
+                            }
+                        }
+                        
+                        manager.queueRequests(requests)
+//                        DispatchQueue.main.async {
+//                            manager.queueRequests(requestsMain)
+//                        }
+
+//                        DispatchQueue.global().async {
+//                            manager.queueRequests(requestsBackground)
+//                        }
+                    }
+                }
                 
                 it("should pass along progress updates scaled to the number of total requests") {
                     waitUntil { done in
                         expect(manager.progress).to(equal(1))
                         
-                        let requests = [MockRequest(dictionary: [:])!, MockRequest(dictionary: [:])!, MockRequest(dictionary: [:])!]
+                        let requests = [MockRequest(dictionary: [:])!,
+                                        MockRequest(dictionary: [:])!,
+                                        MockRequest(dictionary: [:])!]
                         
                         listener.triggerBlock = { type in
                             switch type {

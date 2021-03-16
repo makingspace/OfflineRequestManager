@@ -50,12 +50,12 @@ class MSOfflineRequestTestViewController: UIViewController {
             }
         }
         
-//        for _ in (1...50) {
-//            DispatchQueue.global().async {
-//                self.offlineRequestManager.queueRequest(MSTestRequest.newRequest())
-//                self.updateLabels()
-//            }
-//        }
+        for _ in (1...50) {
+            DispatchQueue.global().async {
+                self.offlineRequestManager.queueRequest(MSTestRequest.newRequest())
+                self.updateLabels()
+            }
+        }
     }
     
     @IBAction func toggleRequestsAllowed(_ sender: UISwitch) {

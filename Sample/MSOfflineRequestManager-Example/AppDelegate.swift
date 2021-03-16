@@ -17,6 +17,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         dispatchWork(.global(), from:1, to: 100, messsage: "🌍")
         dispatchWork(.main, from:1, to: 1000, messsage: "🚀")
+        
+        
         return true
     }
 
@@ -53,7 +55,7 @@ func dispatchWork(_ queue: DispatchQueue = .main, from beginning:Int = 1, to end
         queue.async {
             let scheduledAction = t.execute(on: queue) {
                 
-                print("\(messsage) executed \(each)! on \(Thread.current.name)")
+                print("\(messsage) executed \(each)! on \(Thread.current.name ?? "n/a")")
             }
             
             scheduledAction.onBlockCalled = {

@@ -97,7 +97,13 @@
                                 <state key="normal" title="Queue 100 Async Requests"/>
                                 <connections>
                                     <action selector="queue100Requests" destination="BYZ-38-t0r" eventType="touchUpInside" id="rFd-YX-iyb"/>
-                                    <action selector="queueRequest" destination="BYZ-38-t0r" eventType="touchUpInside" id="XJd-zi-Gla"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="GbH-t2-Tmi">
+                                <rect key="frame" x="93.5" y="273" width="133" height="30"/>
+                                <state key="normal" title="Throttle some work"/>
+                                <connections>
+                                    <action selector="throttleWork" destination="BYZ-38-t0r" eventType="touchUpInside" id="R9O-vK-Ixh"/>
                                 </connections>
                             </button>
                         </subviews>
@@ -119,6 +125,7 @@
                             <constraint firstItem="tgl-Lo-6A8" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="Tw6-37-yy8"/>
                             <constraint firstItem="Sjy-8G-VM5" firstAttribute="top" secondItem="Y9D-94-1E7" secondAttribute="bottom" constant="8" id="UDy-6h-q4a"/>
                             <constraint firstItem="tgl-Lo-6A8" firstAttribute="centerY" secondItem="8kb-Je-OtZ" secondAttribute="centerY" id="Wcb-S7-QbO"/>
+                            <constraint firstItem="GbH-t2-Tmi" firstAttribute="top" secondItem="pCI-6H-Eq0" secondAttribute="bottom" constant="8" symbolic="YES" id="Zw1-a4-Gd7"/>
                             <constraint firstItem="BRR-vu-nVg" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="aT6-k1-UPT"/>
                             <constraint firstItem="Ve1-rZ-oJj" firstAttribute="trailing" secondItem="8bC-Xf-vdC" secondAttribute="trailingMargin" id="fTV-Wr-I2I"/>
                             <constraint firstItem="i1d-gO-7ir" firstAttribute="centerY" secondItem="Ve1-rZ-oJj" secondAttribute="centerY" id="gUx-9X-lVV"/>
@@ -126,6 +133,7 @@
                             <constraint firstItem="92K-KV-XjH" firstAttribute="centerY" secondItem="CAk-7d-L6h" secondAttribute="centerY" id="h6R-sH-rTH"/>
                             <constraint firstItem="8kb-Je-OtZ" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="tgl-Lo-6A8" secondAttribute="trailing" constant="8" id="hiN-b3-VDX"/>
                             <constraint firstItem="x81-HN-35Z" firstAttribute="top" secondItem="tgl-Lo-6A8" secondAttribute="bottom" constant="20" id="iQ3-7a-kLf"/>
+                            <constraint firstItem="GbH-t2-Tmi" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="jbC-cT-Zow"/>
                             <constraint firstItem="Sjy-8G-VM5" firstAttribute="centerY" secondItem="pVI-ah-uy1" secondAttribute="centerY" id="mii-XC-WYs"/>
                             <constraint firstItem="Y9D-94-1E7" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="BRR-vu-nVg" secondAttribute="trailing" constant="8" id="npU-cM-IIj"/>
                             <constraint firstItem="pCI-6H-Eq0" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="pVe-1Z-Suv"/>

@@ -62,6 +62,13 @@ class MSOfflineRequestTestViewController: UIViewController {
         requestsAllowed = sender.isOn
         offlineRequestManager.attemptSubmission()   //this would happen within 10 seconds anyway, but can be kickstarted
     }
+    
+    let throttler = Throttler()
+    
+    @IBAction func throttleWork() {
+        dispatchWork(.global(), from:1, to: 100, messsage: "🌍", throttler: throttler)
+        dispatchWork(.main, from:1, to: 100, messsage: "🚀", throttler: throttler)
+    }
 }
 
 extension MSOfflineRequestTestViewController: OfflineRequestManagerDelegate {
@@ -143,5 +150,34 @@ extension MSTestRequest: URLSessionDownloadDelegate {
     
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
         updateProgress(to: Double(totalBytesWritten) / Double(totalBytesExpectedToWrite))
+    }
+}
+
+extension Thread {
+    var threadName: String {
+        if let currentOperationQueue = OperationQueue.current?.name {
+            return "OperationQueue: \(currentOperationQueue)"
+        } else if let underlyingDispatchQueue = OperationQueue.current?.underlyingQueue?.label {
+            return "DispatchQueue: \(underlyingDispatchQueue)"
+        } else {
+            let name = __dispatch_queue_get_label(nil)
+            return String(cString: name, encoding: .utf8) ?? Thread.current.description
+        }
+    }
+}
+
+func dispatchWork(_ queue: DispatchQueue = .main, from beginning:Int = 1, to end: Int = 20, messsage:String, throttler: Throttler ) {
+    for each in beginning...end {
+        queue.async {
+            let scheduledAction = throttler.execute(on: queue) {
+                print("\(messsage) executed \(each)! on \( Thread.current.threadName)")
+            }
+            
+            scheduledAction.onBlockCalled = {
+                queue.asyncAfter(deadline: .now() + .seconds(Int.random(in: 1...2))) {
+                    throttler.markBlockDone(identifier: scheduledAction.identifier)
+                }
+            }
+        }
     }
 }

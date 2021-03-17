@@ -103,9 +103,6 @@ class OfflineRequestManagerListener: NSObject, OfflineRequestManagerDelegate {
 
 class MSOfflineRequestManagerTests: QuickSpec {
     
-    func testMultipleManager() {
-        XCTAssert(false)
-    }
     override func spec() {
         
         let testFileName = "test_manager"

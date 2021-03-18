@@ -9,7 +9,6 @@
 import Foundation
 import ObjectiveC
 import Network
-import BackgroundTasks
 
 /// Class for handling outstanding network requests; all data is written to disk in the case of app termination
 /// - Throttles requests using a cap for simultaneous requests, see `simultaneousRequestCap`
@@ -235,12 +234,20 @@ public class OfflineRequestManager: NSObject, NSCoding {
         }
     }
     
+    /// Allows for adjustment to pending requests before they are executed
+    ///
+    /// - Parameter modifyBlock: block making any necessary adjustments to the array of pending requests
+    internal func modifyPendingRequests(_ modifyBlock: (([OfflineRequest]) -> [OfflineRequest])) {
+        requestsQueue.modifyPendingRequests(modifyBlock)
+        saveToDisk()
+    }
+    
+    
     /// Clears out any pending requests that are older than the specified threshold; Defaults to 12 hours
     /// - Parameter threshold: maximum number of seconds since the request was first attempted
     internal func clearStaleRequests(withThreshold threshold: TimeInterval = 12 * 60 * 60) {
         let current = Date()
-        requestsQueue.modifyPendingRequests { $0.filter { current.timeIntervalSince($0.timestamp) <= threshold } }
-        saveToDisk()
+        modifyPendingRequests { $0.filter { current.timeIntervalSince($0.timestamp) <= threshold } }
     }
     
     //MARK: - private

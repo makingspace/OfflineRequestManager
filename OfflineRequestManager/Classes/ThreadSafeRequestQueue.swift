@@ -24,17 +24,13 @@ class ThreadSafeRequestQueue {
         }
     }
     
-    var firstIncompleteRequest: OfflineRequest? {
+    func requestForSubmission(cap: Int) -> OfflineRequest? {
         mutex.sync {
+            guard ongoingRequests.count < cap else {return nil}
+            
             return self.incompleteRequests.first(where: { incompleteRequest in
                 !self.ongoingRequests.contains(where: { $0.id == incompleteRequest.id })
             })
-        }
-    }
-    
-    var ongoingRequestsCount: Int {
-        mutex.sync {
-            return ongoingRequests.count
         }
     }
     

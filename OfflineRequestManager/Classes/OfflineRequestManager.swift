@@ -195,10 +195,8 @@ public class OfflineRequestManager: NSObject, NSCoding {
     /// Attempts to perform the next OfflineRequest action in the queue
     /// this would happen within 10 seconds anyway, but can be kickstarted
     @objc public func attemptSubmission() {
-        guard let request = requestsQueue.firstIncompleteRequest, requestsQueue.ongoingRequestsCount < self.simultaneousRequestCap,
-              self.shouldAttemptRequest(request) else {
-            return
-        }
+        
+        guard let request = requestAvailableForSubmission else { return }
         
         self.registerBackgroundTask()
         
@@ -255,6 +253,13 @@ public class OfflineRequestManager: NSObject, NSCoding {
     }
     
     //MARK: - private
+    private var requestAvailableForSubmission : OfflineRequest? {
+        guard let request = requestsQueue.requestForSubmission(cap: simultaneousRequestCap),
+              self.shouldAttemptRequest(request) else {
+            return nil
+        }
+        return request
+    }
     
     private var isConnected : Bool {
         monitor.currentPath.status == .satisfied

@@ -60,7 +60,6 @@ public class Throttler {
             //Schedule the timeout
             if let timeout = timeout {
                 DispatchQueue.main.asyncAfter(deadline: .now() + timeout) {
-                    print("Timeout for block id: \(newId)")
                     scheduledAction.timeout()
                 }
             }
@@ -75,8 +74,9 @@ public class Throttler {
     public func markBlockDone(identifier: Int) {
         mutex.sync {
             guard let operation = queuedActions[identifier] else {return}
-            operation.markDone()
             queuedActions.removeValue(forKey: identifier)
+            guard operation.state == .started else {return}
+            operation.markDone()
         }
     }
     
@@ -94,9 +94,15 @@ public class Throttler {
 extension Throttler {
     public class ScheduledAction {
         public let identifier: Int
+        public var onStateChanged : ((State) -> Void)?
+        
         private let block: Action
         private var dispatchGroup : DispatchGroup?
-        public var onBlockCalled : Action? = nil
+        internal var state : State = .notStarted {
+            didSet {
+                self.publishState()
+            }
+        }
         
         private let mutex: DispatchQueue = DispatchQueue(label: "mutex for accessing the dispatch group")
         
@@ -108,6 +114,10 @@ extension Throttler {
             self.block = block
         }
         
+        private func publishState() {
+            self.onStateChanged?(self.state)
+        }
+        
         internal func execute(on dispatchQueue: DispatchQueue = .main) {
             mutex.sync {
                 dispatchGroup = DispatchGroup()
@@ -116,7 +126,7 @@ extension Throttler {
             }
             dispatchQueue.async {
                 self.block()
-                self.onBlockCalled?()
+                self.state = .started
             }
             dispatchGroup!.wait()
             dispatchGroup = nil
@@ -125,12 +135,14 @@ extension Throttler {
         
         internal func markDone() {
             print("Done \(identifier)!")
+            self.state = .done
             self.operation = nil
-            dispatchGroup?.leave()
+            mutex.sync {
+                dispatchGroup?.leave()
+            }
         }
         
-        internal func cancel() {
-            print(" Cancel \(identifier)!")
+        fileprivate func cancelOperation() {
             self.operation = nil
             self.operation?.cancel()
             mutex.sync {
@@ -138,9 +150,26 @@ extension Throttler {
             }
         }
         
+        internal func cancel() {
+            cancelOperation()
+            self.state = .canceled
+        }
+        
         internal func timeout() {
-            print("👀 Timeout \(identifier)!")
-            cancel()
+            guard self.state != .done, self.state != .timedOut else {
+                return
+            }
+            print("Timeout for block id: \(identifier)")
+            self.cancelOperation()
+            self.state = .timedOut
+        }
+        
+        public enum State {
+            case started
+            case timedOut
+            case notStarted
+            case done
+            case canceled
         }
     }
 }

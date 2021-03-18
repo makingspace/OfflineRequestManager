@@ -7,7 +7,9 @@
 
 import Foundation
 
-/// Manages incomplete and ongoingRequests using a mutex to synchronize access
+/// Manages incomplete and ongoingRequests using a mutex to synchronize access.
+/// You can call any of the methods concurrently from different queues.
+/// All methods are dispached synchronously and none of them accepts closures, to avoid deadlocks by nesting sync requests.
 class ThreadSafeRequestQueue {
     private(set) var ongoingRequests = [OfflineRequest]()
     private(set) var incompleteRequests = [OfflineRequest]()
@@ -27,18 +29,6 @@ class ThreadSafeRequestQueue {
             return self.incompleteRequests.first(where: { incompleteRequest in
                 !self.ongoingRequests.contains(where: { $0.id == incompleteRequest.id })
             })
-        }
-    }
-    
-    func firstOngoingRequestWith(identifier: String) -> OfflineRequest? {
-        mutex.sync {
-            return self.ongoingRequests.first(where: { $0.id == identifier })
-        }
-    }
-    
-    func firstIncompleteRequestWith(identifier: String) -> OfflineRequest? {
-        mutex.sync {
-            return incompleteRequests.first(where: { $0.id == identifier } )
         }
     }
     
@@ -64,6 +54,18 @@ class ThreadSafeRequestQueue {
         }
     }
     
+    func firstOngoingRequestWith(identifier: String) -> OfflineRequest? {
+        mutex.sync {
+            return self.ongoingRequests.first(where: { $0.id == identifier })
+        }
+    }
+    
+    func firstIncompleteRequestWith(identifier: String) -> OfflineRequest? {
+        mutex.sync {
+            return incompleteRequests.first(where: { $0.id == identifier } )
+        }
+    }
+    
     func append(requests: [OfflineRequest]) {
         mutex.sync {
             incompleteRequests.append(contentsOf: requests)
@@ -82,12 +84,6 @@ class ThreadSafeRequestQueue {
             guard let index = ongoingRequests.index(where: { $0.id == request.id }) else { return }
             ongoingRequests.remove(at: index)
         }
-    }
-    
-    enum PopResult {
-        case nothingToDo
-        case allComplete
-        case incompleteRemaining
     }
     
     func pop(incompleteRequest: OfflineRequest) -> PopResult {
@@ -127,4 +123,9 @@ class ThreadSafeRequestQueue {
         }
     }
 
+    enum PopResult {
+        case nothingToDo
+        case allComplete
+        case incompleteRemaining
+    }
 }

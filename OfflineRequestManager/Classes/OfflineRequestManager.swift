@@ -11,12 +11,27 @@ import ObjectiveC
 import Network
 import BackgroundTasks
 
-
-
-// Class for handling outstanding network requests; all data is written to disk in the case of app termination
+/// Class for handling outstanding network requests; all data is written to disk in the case of app termination
+/// - Throttles requests using a cap for simultaneous requests, see `simultaneousRequestCap`
 public class OfflineRequestManager: NSObject, NSCoding {
 
+    private static var managers = [String: OfflineRequestManager]()
+    private var incompleteRequestDictionaries = [[String: Any]]()
+    private var backgroundTask: UIBackgroundTaskIdentifier?
+    private var submissionTimer: Timer?
+    private var archiveFileName = ""
+    /// Time limit in seconds before OfflineRequestManager will kill an ongoing OfflineRequest
+    public var requestTimeLimit: TimeInterval = 120
+    
+    /// Maximum number of simultaneous requests allowed
+    public var simultaneousRequestCap: Int = 10
+    
+    private static let codingKey = "pendingRequestDictionaries"
     internal static let timestampKey = "offline_request_timestamp"
+    public static let defaultFileName = "offline_request_manager"
+    private let monitor = NWPathMonitor()
+    private let monitorQueue = DispatchQueue(label: "Network changes monitor")
+    private let requestsQueue = ThreadSafeRequestQueue()
     
     /// Object listening to all callbacks from the OfflineRequestManager.  Must implement either delegate or requestInstantiationBlock to send archived requests
     /// when recovering from app termination
@@ -63,23 +78,12 @@ public class OfflineRequestManager: NSObject, NSCoding {
     public var completedRequestCount : Int {
         requestsQueue.completedRequestCount
     }
-        
-    /// Time limit in seconds before OfflineRequestManager will kill an ongoing OfflineRequest
-    public var requestTimeLimit: TimeInterval = 120
-    
-    /// Maximum number of simultaneous requests allowed
-    public var simultaneousRequestCap: Int = 10
     
     /// Time between submission attempts
     public var submissionInterval: TimeInterval = 10 {
         didSet {
             setupTimer()
         }
-    }
-    
-    /// Default singleton OfflineRequestManager
-    static public var defaultManager: OfflineRequestManager {
-        return manager(withFileName: defaultFileName)
     }
     
     /// Current progress for all ongoing requests (ranges from 0 to 1)
@@ -89,21 +93,12 @@ public class OfflineRequestManager: NSObject, NSCoding {
         }
     }
     
-    private var incompleteRequestDictionaries = [[String: Any]]()
-    
-    private static let codingKey = "pendingRequestDictionaries"
-    private static var managers = [String: OfflineRequestManager]()
-    /// Name of file in Documents directory to which OfflineRequestManager object is archived by default
-    public static let defaultFileName = "offline_request_manager"
-    private var backgroundTask: UIBackgroundTaskIdentifier?
-    private var submissionTimer: Timer?
-    private var fileName = ""
-    private let backgroundDownloadingTaskName = "background downloading"
-    private let monitor = NWPathMonitor()
-    private let monitorQueue = DispatchQueue(label: "Monitor")
-    private let requestsQueue = ThreadSafeRequestQueue()
-    
     //MARK: lifecycle
+    
+    /// Default singleton OfflineRequestManager
+    static public var defaultManager: OfflineRequestManager {
+        return manager(withFileName: defaultFileName)
+    }
     
     override init() {
         super.init()
@@ -131,6 +126,8 @@ public class OfflineRequestManager: NSObject, NSCoding {
         monitor.cancel()
     }
     
+    
+    
     public func encode(with aCoder: NSCoder) {
         aCoder.encode(incompleteRequestDictionaries, forKey: OfflineRequestManager.codingKey)
     }
@@ -139,7 +136,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     static public func manager(withFileName fileName: String) -> OfflineRequestManager {
         guard let manager = managers[fileName] else {
             let manager = archivedManager(fileName: fileName) ?? OfflineRequestManager()
-            manager.fileName = fileName
+            manager.archiveFileName = fileName
             managers[fileName] = manager
             return manager
         }
@@ -155,10 +152,12 @@ public class OfflineRequestManager: NSObject, NSCoding {
                     return nil
             }
             
-            archivedManager.fileName = fileName
+            archivedManager.archiveFileName = fileName
             return archivedManager
+        } catch let error {
+            assertionFailure("This shouldn't happen \(error.localizedDescription)")
+            return nil
         }
-        catch { return nil }
     }
     
     //MARK: - public
@@ -229,9 +228,15 @@ public class OfflineRequestManager: NSObject, NSCoding {
    
     /// Writes the OfflineRequestManager instances to the Documents directory
     internal func saveToDisk() {
-        guard let path = OfflineRequestManager.fileURL(fileName: fileName)?.path else { return }
+        guard let path = OfflineRequestManager.fileURL(fileName: archiveFileName) else { return }
         incompleteRequestDictionaries = requestsQueue.incompleteRequestDictionaries
-        NSKeyedArchiver.archiveRootObject(self, toFile: path)
+        
+        do {
+            let data = try NSKeyedArchiver.archivedData(withRootObject: self, requiringSecureCoding: false)
+            try data.write(to: path)
+        } catch let error {
+            assertionFailure("This shouldn't happen \(error.localizedDescription)")
+        }
     }
     
     /// Allows for adjustment to pending requests before they are executed
@@ -286,7 +291,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
     private func registerBackgroundTask() {
         if backgroundTask == nil {
             //only if the bg task wasn't registered before
-            backgroundTask = UIApplication.shared.beginBackgroundTask(withName: backgroundDownloadingTaskName, expirationHandler: {
+            backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "background downloading", expirationHandler: {
                 self.saveToDisk()
                 self.endBackgroundTask()
             })

@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// Protocol for receiving callbacaks from OfflineRequestManager and reconfiguring a new OfflineRequestManager from dictionaries saved to disk in the case of
+/// Protocol for receiving callbacks from OfflineRequestManager and reconfiguring a new OfflineRequestManager from dictionaries saved to disk in the case of
 /// previous requests that never completed
 public protocol OfflineRequestManagerDelegate: AnyObject {
     

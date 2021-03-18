@@ -10,11 +10,19 @@ import Foundation
 import OfflineRequestManager
 
 class MSOfflineRequestTestViewController: UIViewController {
-    @IBOutlet weak var connectionStatusLabel: UILabel!
-    @IBOutlet weak var completedRequestsLabel: UILabel!
-    @IBOutlet weak var pendingRequestsLabel: UILabel!
-    @IBOutlet weak var totalProgressLabel: UILabel!
-    @IBOutlet weak var lastRequestLabel: UILabel!
+    @IBOutlet var connectionStatusLabel: UILabel!
+    @IBOutlet var completedRequestsLabel: UILabel!
+    @IBOutlet var pendingRequestsLabel: UILabel!
+    @IBOutlet var totalProgressLabel: UILabel!
+    @IBOutlet var lastRequestLabel: UILabel!
+    @IBOutlet var throttledCountLabel: UILabel!
+    @IBOutlet var finishedCountLabel: UILabel!
+    @IBOutlet var canceledCountLabel: UILabel!
+    @IBOutlet var timedOutCountLabel: UILabel!
+    private var throttledCount = 0
+    private var finishedCount = 0
+    private var canceledCount = 0
+    private var timedOutCount = 0
     
     fileprivate var requestsAllowed = true
     
@@ -26,6 +34,9 @@ class MSOfflineRequestTestViewController: UIViewController {
         super.viewDidLoad()
         offlineRequestManager.delegate = self
         updateLabels()
+        timedOutCountLabel.text = timedOutCount.description
+        throttledCountLabel.text = throttledCount.description
+        canceledCountLabel.text = canceledCount.description
     }
     
     func updateLabels() {
@@ -66,8 +77,50 @@ class MSOfflineRequestTestViewController: UIViewController {
     let throttler = Throttler()
     
     @IBAction func throttleWork() {
-        dispatchWork(.global(), from:1, to: 100, messsage: "🌍", throttler: throttler)
-        dispatchWork(.main, from:1, to: 100, messsage: "🚀", throttler: throttler)
+        let onFinished = { (message:String) -> Void in
+            DispatchQueue.main.async {
+                self.finishedCount += 1
+                self.finishedCountLabel.text = self.finishedCount.description
+            }
+        }
+        
+        let onStarted = { () -> Void in
+            DispatchQueue.main.async {
+                self.throttledCount += 1
+                self.throttledCountLabel.text = self.throttledCount.description
+            }
+        }
+        
+        let onTimeOut = { () -> Void in
+            DispatchQueue.main.async {
+                self.timedOutCount += 1
+                self.timedOutCountLabel.text = self.timedOutCount.description
+            }
+        }
+        
+        
+        let onCancel = { () -> Void in
+            DispatchQueue.main.async {
+                self.canceledCount += 1
+                self.canceledCountLabel.text = self.canceledCount.description
+            }
+        }
+        
+        dispatchWork(.global(), from:1, to: 30, messsage: "🌍",
+                     throttler: throttler,
+                     timeout: .seconds(5),
+                     onStarted: onStarted,
+                     onTimeout: onTimeOut,
+                     onCancel: onCancel,
+                     onFinished: onFinished)
+        
+        dispatchWork(.main, from:1, to: 30, messsage: "🚀",
+                     throttler: throttler,
+                     timeout: .seconds(5),
+                     onStarted: onStarted,
+                     onTimeout: onTimeOut,
+                     onCancel: onCancel,
+                     onFinished: onFinished)
     }
 }
 
@@ -135,7 +188,7 @@ class MSTestRequest: NSObject, OfflineRequest {
         guard let url = URL(string: "https://s3.amazonaws.com/fast-image-cache/demo-images/FICDDemoImage004.jpg") else { return }
         
         let session = URLSession(configuration: URLSessionConfiguration.default, delegate: self, delegateQueue: OperationQueue.main)
-
+        
         self.completion = completion
         session.downloadTask(with: url).resume()
     }
@@ -166,16 +219,36 @@ extension Thread {
     }
 }
 
-func dispatchWork(_ queue: DispatchQueue = .main, from beginning:Int = 1, to end: Int = 20, messsage:String, throttler: Throttler ) {
+func dispatchWork(_ queue: DispatchQueue = .main,
+                  from beginning:Int = 1,
+                  to end: Int = 20,
+                  messsage:String,
+                  throttler: Throttler,
+                  timeout: DispatchTimeInterval? = nil,
+                  onStarted: @escaping () -> Void,
+                  onTimeout: @escaping () -> Void,
+                  onCancel: @escaping () -> Void,
+                  onFinished: @escaping (String) -> Void ) {
+    
     for each in beginning...end {
         queue.async {
-            let scheduledAction = throttler.execute(on: queue) {
-                print("\(messsage) executed \(each)! on \( Thread.current.threadName)")
+            let finalMessage = "\(messsage) executed \(each)! on \( Thread.current.threadName)"
+            let scheduledAction = throttler.execute(on: queue, timeout: timeout) {
+                print(finalMessage)
             }
             
-            scheduledAction.onBlockCalled = {
-                queue.asyncAfter(deadline: .now() + .seconds(Int.random(in: 1...2))) {
-                    throttler.markBlockDone(identifier: scheduledAction.identifier)
+            scheduledAction.onStateChanged = { state in
+                switch state {
+                case .started:
+                    //wait 1 second until marking completed
+                    queue.asyncAfter(deadline: .now() + .seconds(1)) {
+                        throttler.markBlockDone(identifier: scheduledAction.identifier)
+                    }
+                    onStarted()
+                case .timedOut: onTimeout()
+                case .canceled : onCancel()
+                case .done : onFinished(finalMessage)
+                case .notStarted: break
                 }
             }
         }

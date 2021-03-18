@@ -204,6 +204,14 @@ public class OfflineRequestManager: NSObject, NSCoding {
         self.submitRequest(request)
     }
     
+    /// Allows for adjustment to pending requests before they are executed
+    ///
+    /// - Parameter modifyBlock: block making any necessary adjustments to the array of pending requests
+    public func modifyPendingRequests(_ modifyBlock: (([OfflineRequest]) -> [OfflineRequest])) {
+        requestsQueue.modifyPendingRequests(modifyBlock)
+        saveToDisk()
+    }
+    
     //MARK: - internal
     
     internal var ongoingRequests : [OfflineRequest] {
@@ -234,14 +242,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
         }
     }
     
-    /// Allows for adjustment to pending requests before they are executed
-    ///
-    /// - Parameter modifyBlock: block making any necessary adjustments to the array of pending requests
-    internal func modifyPendingRequests(_ modifyBlock: (([OfflineRequest]) -> [OfflineRequest])) {
-        requestsQueue.modifyPendingRequests(modifyBlock)
-        saveToDisk()
-    }
-    
+
     
     /// Clears out any pending requests that are older than the specified threshold; Defaults to 12 hours
     /// - Parameter threshold: maximum number of seconds since the request was first attempted

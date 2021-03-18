@@ -29,8 +29,8 @@ public class OfflineRequestManager: NSObject, NSCoding {
     private static let codingKey = "pendingRequestDictionaries"
     internal static let timestampKey = "offline_request_timestamp"
     public static let defaultFileName = "offline_request_manager"
-    private let monitor = NWPathMonitor()
-    private let monitorQueue = DispatchQueue(label: "Network changes monitor")
+    private let networkMonitor = NWPathMonitor()
+    private let networkMonitorQueue = DispatchQueue(label: "Network changes monitor")
     private let requestsQueue = ThreadSafeRequestQueue()
     
     /// Object listening to all callbacks from the OfflineRequestManager.  Must implement either delegate or requestInstantiationBlock to send archived requests
@@ -102,17 +102,17 @@ public class OfflineRequestManager: NSObject, NSCoding {
     
     override init() {
         super.init()
-        monitor.pathUpdateHandler = { path in
+        networkMonitor.pathUpdateHandler = { path in
             self.connected = path.status == .satisfied
         }
-        monitor.start(queue: monitorQueue)
+        networkMonitor.start(queue: networkMonitorQueue)
         
         setupTimer()
     }
     
     required convenience public init?(coder aDecoder: NSCoder) {
         guard let requestDicts = aDecoder.decodeObject(forKey: OfflineRequestManager.codingKey) as? [[String: Any]] else {
-            print ("Error Decoding Offline Request Dictionaries")
+            assertionFailure("Error Decoding Offline Request Dictionaries")
             return nil
         }
         
@@ -123,10 +123,8 @@ public class OfflineRequestManager: NSObject, NSCoding {
     deinit {
         submissionTimer?.invalidate()
         
-        monitor.cancel()
+        networkMonitor.cancel()
     }
-    
-    
     
     public func encode(with aCoder: NSCoder) {
         aCoder.encode(incompleteRequestDictionaries, forKey: OfflineRequestManager.codingKey)
@@ -237,22 +235,16 @@ public class OfflineRequestManager: NSObject, NSCoding {
         }
     }
     
-    /// Allows for adjustment to pending requests before they are executed
-    ///
-    /// - Parameter modifyBlock: block making any necessary adjustments to the array of pending requests
-    internal func modifyPendingRequests(_ modifyBlock: (([OfflineRequest]) -> [OfflineRequest])) {
-        requestsQueue.modifyPendingRequests(modifyBlock)
-        saveToDisk()
-    }
-    
     /// Clears out any pending requests that are older than the specified threshold; Defaults to 12 hours
     /// - Parameter threshold: maximum number of seconds since the request was first attempted
     internal func clearStaleRequests(withThreshold threshold: TimeInterval = 12 * 60 * 60) {
         let current = Date()
-        modifyPendingRequests { $0.filter { current.timeIntervalSince($0.timestamp) <= threshold } }
+        requestsQueue.modifyPendingRequests { $0.filter { current.timeIntervalSince($0.timestamp) <= threshold } }
+        saveToDisk()
     }
     
     //MARK: - private
+    
     private var requestAvailableForSubmission : OfflineRequest? {
         guard let request = requestsQueue.requestForSubmission(cap: simultaneousRequestCap),
               self.shouldAttemptRequest(request) else {
@@ -262,17 +254,14 @@ public class OfflineRequestManager: NSObject, NSCoding {
     }
     
     private var isConnected : Bool {
-        monitor.currentPath.status == .satisfied
+        networkMonitor.currentPath.status == .satisfied
     }
     
     private static func fileURL(fileName: String) -> URL? {
-        do {
-            return try FileManager.default.url(for: .documentDirectory,
-                                               in: .userDomainMask,
-                                               appropriateFor: nil,
-                                               create: false).appendingPathComponent(fileName)
-        }
-        catch { return nil }
+        return try? FileManager.default.url(for: .documentDirectory,
+                                            in: .userDomainMask,
+                                            appropriateFor: nil,
+                                            create: false).appendingPathComponent(fileName)
     }
     
     private func instantiateInitialRequests(withBlock block: @escaping (([String: Any]) -> OfflineRequest?)) {

@@ -110,6 +110,9 @@ class ThreadSafeRequestQueue {
         }
     }
     
+    /// Allows for adjustment to pending requests before they are executed
+    ///
+    /// - Parameter modifyBlock: block making any necessary adjustments to the array of pending requests
     func modifyPendingRequests(_ modifyBlock: (([OfflineRequest]) -> [OfflineRequest])) {
         mutex.sync {
             let pendingRequests = incompleteRequests.filter { request in

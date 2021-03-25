@@ -151,8 +151,8 @@ public class OfflineRequestManager: NSObject, NSCoding {
             
             archivedManager.archiveFileName = fileName
             return archivedManager
-        } catch let error {
-            assertionFailure("This shouldn't happen \(error.localizedDescription)")
+        } catch {
+            //errors don't matter here
             return nil
         }
     }

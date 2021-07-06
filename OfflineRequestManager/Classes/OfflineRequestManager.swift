@@ -211,7 +211,12 @@ public class OfflineRequestManager: NSObject, NSCoding {
         requestsQueue.modifyPendingRequests(modifyBlock)
         saveToDisk()
     }
-    
+    /// Clears out the current OfflineRequest queue and returns to a neutral state
+    public func clearAllRequests() {
+        requestsQueue.clearRequests()
+        progress = 1
+        saveToDisk()
+    }
     //MARK: - internal
     
     internal var ongoingRequests : [OfflineRequest] {
@@ -222,13 +227,7 @@ public class OfflineRequestManager: NSObject, NSCoding {
         requestsQueue.incompleteRequests
     }
     
-    /// Clears out the current OfflineRequest queue and returns to a neutral state
-    internal func clearAllRequests() {
-        requestsQueue.clearRequests()
-        progress = 1
-        saveToDisk()
-    }
-   
+  
     /// Writes the OfflineRequestManager instances to the Documents directory
     internal func saveToDisk() {
         guard let path = OfflineRequestManager.fileURL(fileName: archiveFileName) else { return }

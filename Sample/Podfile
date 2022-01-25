@@ -1,8 +1,15 @@
-source 'https://github.com/CocoaPods/Specs.git'
-
+# Min target
 platform :ios, '13.0'
 
-use_frameworks!
+# Pod install settings
+# Configured for using separate projects (more performant)
+install! 'cocoapods',
+generate_multiple_pod_projects: true,
+incremental_installation: true
+use_modular_headers!
+
+# Open Source Cocoapods
+source 'https://cdn.cocoapods.org'
 
 def shared_pods
     pod 'OfflineRequestManager', :path => '../'

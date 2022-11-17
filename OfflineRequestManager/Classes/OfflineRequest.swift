@@ -8,7 +8,7 @@
 import Foundation
 
 /// Protocol for objects enqueued in OfflineRequestManager to perform operations
-public protocol OfflineRequest: class, DictionaryRepresentable {
+public protocol OfflineRequest: AnyObject, DictionaryRepresentable {
     
     /// Called whenever the request manager instructs the object to perform its network request
     ///

@@ -77,14 +77,14 @@ class ThreadSafeRequestQueue {
     
     func removeOngoingRequest(_ request: OfflineRequest) {
         mutex.sync {
-            guard let index = ongoingRequests.index(where: { $0.id == request.id }) else { return }
+            guard let index = ongoingRequests.firstIndex(where: { $0.id == request.id }) else { return }
             ongoingRequests.remove(at: index)
         }
     }
     
     func pop(incompleteRequest: OfflineRequest) -> PopResult {
         mutex.sync {
-            guard let index = incompleteRequests.index(where: { $0.id == incompleteRequest.id } ) else {
+            guard let index = incompleteRequests.firstIndex(where: { $0.id == incompleteRequest.id } ) else {
                 return .nothingToDo
             }
             

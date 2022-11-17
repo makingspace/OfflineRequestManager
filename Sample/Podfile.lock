@@ -1,0 +1,31 @@
+PODS:
+  - Alamofire (5.4.4)
+  - Nimble (9.2.1)
+  - OfflineRequestManager (1.2.1):
+    - Alamofire
+  - Quick (4.0.0)
+
+DEPENDENCIES:
+  - Nimble
+  - OfflineRequestManager (from `../`)
+  - Quick
+
+SPEC REPOS:
+  trunk:
+    - Alamofire
+    - Nimble
+    - Quick
+
+EXTERNAL SOURCES:
+  OfflineRequestManager:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  Alamofire: f3b09a368f1582ab751b3fff5460276e0d2cf5c9
+  Nimble: e7e615c0335ee4bf5b0d786685451e62746117d5
+  OfflineRequestManager: cb197f4b83f5467c2aa21fdbe79a91e240c9d7ac
+  Quick: 6473349e43b9271a8d43839d9ba1c442ed1b7ac4
+
+PODFILE CHECKSUM: 5dab3059be19b18bffdef9eb20c49dc5f3ebcfc3
+
+COCOAPODS: 1.11.2

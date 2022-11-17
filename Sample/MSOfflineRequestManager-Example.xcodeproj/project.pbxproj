@@ -7,14 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		51EAAA38AA82ADFC1A6BFD85 /* Pods_MSOfflineRequestManager_ExampleTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B539D3ACD410B7D36D4CFD41 /* Pods_MSOfflineRequestManager_ExampleTests.framework */; };
+		17ADEF753E90CAD184E91BE1 /* libPods-MSOfflineRequestManager-ExampleTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0B30F5FF34EA791C6C703950 /* libPods-MSOfflineRequestManager-ExampleTests.a */; };
 		684E0B0C2056FC40005A16B6 /* MSOfflineRequestTestViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684E0B0B2056FC40005A16B6 /* MSOfflineRequestTestViewController.swift */; };
 		68EA09771E43BFB6002A1338 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68EA09761E43BFB6002A1338 /* AppDelegate.swift */; };
 		68EA097C1E43BFB6002A1338 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 68EA097A1E43BFB6002A1338 /* Main.storyboard */; };
 		68EA097E1E43BFB6002A1338 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 68EA097D1E43BFB6002A1338 /* Assets.xcassets */; };
 		68EA09811E43BFB6002A1338 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 68EA097F1E43BFB6002A1338 /* LaunchScreen.storyboard */; };
 		68EA09921E453952002A1338 /* MSOfflineRequestManager_ExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68EA09911E453952002A1338 /* MSOfflineRequestManager_ExampleTests.swift */; };
-		BA269F988496DC02D8F7EA7B /* Pods_MSOfflineRequestManager_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E24E9B84F8F894B2F0AFF7C2 /* Pods_MSOfflineRequestManager_Example.framework */; };
+		C5C51FB98DEF747B642A3815 /* libPods-MSOfflineRequestManager-Example.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 43FB411BB0DD17E04082B7DF /* libPods-MSOfflineRequestManager-Example.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -28,6 +28,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0B30F5FF34EA791C6C703950 /* libPods-MSOfflineRequestManager-ExampleTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MSOfflineRequestManager-ExampleTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		43FB411BB0DD17E04082B7DF /* libPods-MSOfflineRequestManager-Example.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MSOfflineRequestManager-Example.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		478AA1A5BAA5E5FEACC8B611 /* Pods-MSOfflineRequestManager-Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MSOfflineRequestManager-Example.release.xcconfig"; path = "Pods/Target Support Files/Pods-MSOfflineRequestManager-Example/Pods-MSOfflineRequestManager-Example.release.xcconfig"; sourceTree = "<group>"; };
 		684E0B0B2056FC40005A16B6 /* MSOfflineRequestTestViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MSOfflineRequestTestViewController.swift; sourceTree = "<group>"; };
 		68EA09731E43BFB6002A1338 /* MSOfflineRequestManager-Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MSOfflineRequestManager-Example.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -40,11 +42,9 @@
 		68EA09911E453952002A1338 /* MSOfflineRequestManager_ExampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MSOfflineRequestManager_ExampleTests.swift; sourceTree = "<group>"; };
 		68EA09931E453952002A1338 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		68EA09991E492EC5002A1338 /* MSOfflineRequestManager-Example-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MSOfflineRequestManager-Example-Bridging-Header.h"; sourceTree = "<group>"; };
-		B539D3ACD410B7D36D4CFD41 /* Pods_MSOfflineRequestManager_ExampleTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MSOfflineRequestManager_ExampleTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B841DE36A25022E0F70C1717 /* Pods-MSOfflineRequestManager-ExampleTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MSOfflineRequestManager-ExampleTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-MSOfflineRequestManager-ExampleTests/Pods-MSOfflineRequestManager-ExampleTests.release.xcconfig"; sourceTree = "<group>"; };
 		BF4D53E7A4800C9B3C9756EF /* Pods-MSOfflineRequestManager-ExampleTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MSOfflineRequestManager-ExampleTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-MSOfflineRequestManager-ExampleTests/Pods-MSOfflineRequestManager-ExampleTests.debug.xcconfig"; sourceTree = "<group>"; };
 		CAB7853FE74B6F8405E99D93 /* Pods-MSOfflineRequestManager-Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MSOfflineRequestManager-Example.debug.xcconfig"; path = "Pods/Target Support Files/Pods-MSOfflineRequestManager-Example/Pods-MSOfflineRequestManager-Example.debug.xcconfig"; sourceTree = "<group>"; };
-		E24E9B84F8F894B2F0AFF7C2 /* Pods_MSOfflineRequestManager_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MSOfflineRequestManager_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,7 +52,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BA269F988496DC02D8F7EA7B /* Pods_MSOfflineRequestManager_Example.framework in Frameworks */,
+				C5C51FB98DEF747B642A3815 /* libPods-MSOfflineRequestManager-Example.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -60,7 +60,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				51EAAA38AA82ADFC1A6BFD85 /* Pods_MSOfflineRequestManager_ExampleTests.framework in Frameworks */,
+				17ADEF753E90CAD184E91BE1 /* libPods-MSOfflineRequestManager-ExampleTests.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -124,8 +124,8 @@
 		F352793F0F048EC9AF6EC924 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				E24E9B84F8F894B2F0AFF7C2 /* Pods_MSOfflineRequestManager_Example.framework */,
-				B539D3ACD410B7D36D4CFD41 /* Pods_MSOfflineRequestManager_ExampleTests.framework */,
+				43FB411BB0DD17E04082B7DF /* libPods-MSOfflineRequestManager-Example.a */,
+				0B30F5FF34EA791C6C703950 /* libPods-MSOfflineRequestManager-ExampleTests.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -141,7 +141,6 @@
 				68EA096F1E43BFB6002A1338 /* Sources */,
 				68EA09701E43BFB6002A1338 /* Frameworks */,
 				68EA09711E43BFB6002A1338 /* Resources */,
-				189264EA1A94888654949A12 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -160,7 +159,6 @@
 				68EA098B1E453952002A1338 /* Sources */,
 				68EA098C1E453952002A1338 /* Frameworks */,
 				68EA098D1E453952002A1338 /* Resources */,
-				2242C1A4B4DBD73FE4153566 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -237,50 +235,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		189264EA1A94888654949A12 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-MSOfflineRequestManager-Example/Pods-MSOfflineRequestManager-Example-frameworks.sh",
-				"${BUILT_PRODUCTS_DIR}/Alamofire/Alamofire.framework",
-				"${BUILT_PRODUCTS_DIR}/OfflineRequestManager/OfflineRequestManager.framework",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Alamofire.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/OfflineRequestManager.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MSOfflineRequestManager-Example/Pods-MSOfflineRequestManager-Example-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		2242C1A4B4DBD73FE4153566 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-MSOfflineRequestManager-ExampleTests/Pods-MSOfflineRequestManager-ExampleTests-frameworks.sh",
-				"${BUILT_PRODUCTS_DIR}/Alamofire/Alamofire.framework",
-				"${BUILT_PRODUCTS_DIR}/OfflineRequestManager/OfflineRequestManager.framework",
-				"${BUILT_PRODUCTS_DIR}/Nimble/Nimble.framework",
-				"${BUILT_PRODUCTS_DIR}/Quick/Quick.framework",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Alamofire.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/OfflineRequestManager.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Nimble.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Quick.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MSOfflineRequestManager-ExampleTests/Pods-MSOfflineRequestManager-ExampleTests-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 		2F779CECDE333F98A3C9719F /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
